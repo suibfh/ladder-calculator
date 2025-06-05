@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ランクマッチ戦略シミュレーター</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>ランクマッチ戦略シミュレーター</h1>
+
+        <div class="input-section">
+            <h2>現状の入力</h2>
+            <div class="input-group">
+                <label for="wins">現在の勝ち数:</label>
+                <input type="number" id="wins" value="0" min="0">
+            </div>
+            <div class="input-group">
+                <label for="losses">現在の負け数:</label> <input type="number" id="losses" value="0" min="0">
+            </div>
+            <div class="input-group">
+                <label for="currentRate">現在のレート:</label>
+                <input type="number" id="currentRate" value="" placeholder="例: 1500" min="0"> </div>
+            <div class="input-group">
+                <label for="targetRateIncrease">目標レート増加量:</label>
+                <input type="number" id="targetRateIncrease" value="200" min="0">
+            </div>
+        </div>
+
+        <div class="input-section">
+            <h2>レート変動量の設定 (ベース値)</h2>
+            <p class="description">相手ランクと自身のレート差が大きいほど変動が大きくなります。<br>「かなり上」「かなり下」の相手との勝敗時に、レートがどのくらい変動するか設定してください。</p>
+            <div class="input-group">
+                <label for="rateGainVsMuchHigher">かなり上の相手に勝利時 (+):</label>
+                <input type="number" id="rateGainVsMuchHigher" value="50">
+            </div>
+            <div class="input-group">
+                <label for="rateLossVsMuchHigher">かなり上の相手に敗北時 (-):</label>
+                <input type="number" id="rateLossVsMuchHigher" value="10">
+            </div>
+            <div class="input-group">
+                <label for="rateGainVsMuchLower">かなり下の相手に勝利時 (+):</label>
+                <input type="number" id="rateGainVsMuchLower" value="10">
+            </div>
+            <div class="input-group">
+                <label for="rateLossVsMuchLower">かなり下の相手に敗北時 (-):</label>
+                <input type="number" id="rateLossVsMuchLower" value="50">
+            </div>
+        </div>
+
+        <div class="input-section">
+            <h2>対戦相手ランク帯別の勝利割合</h2>
+            <p class="description">各ランク帯の相手にどのくらいの確率で勝利しているか設定してください。</p>
+            <div class="input-group">
+                <label for="winRateVsMuchHigher">かなり上の相手への勝利割合 (%):</label>
+                <input type="number" id="winRateVsMuchHigher" value="" placeholder="例: 30" min="0" max="100"> </div>
+            <div class="input-group">
+                <label for="winRateVsSlightlyHigher">やや上の相手への勝利割合 (%):</label>
+                <input type="number" id="winRateVsSlightlyHigher" value="" placeholder="例: 45" min="0" max="100"> </div>
+            <div class="input-group">
+                <label for="winRateVsEqual">同等の相手への勝利割合 (%):</label>
+                <input type="number" id="winRateVsEqual" value="" placeholder="例: 50" min="0" max="100"> </div>
+            <div class="input-group">
+                <label for="winRateVsSlightlyLower">やや下の相手への勝利割合 (%):</label>
+                <input type="number" id="winRateVsSlightlyLower" value="" placeholder="例: 55" min="0" max="100"> </div>
+            <div class="input-group">
+                <label for="winRateVsMuchLower">かなり下の相手への勝利割合 (%):</label>
+                <input type="number" id="winRateVsMuchLower" value="" placeholder="例: 70" min="0" max="100"> </div>
+        </div>
+
+        <button id="calculateButton">結果を計算</button>
+
+        <div class="output-section">
+            <h2>計算結果</h2>
+            <p>現在の総試合数: <span id="totalMatchesDisplay">--</span></p> <p>現在の勝率: <span id="currentWinRate">--.-%</span></p>
+            <p>100戦後のレート期待値: <span id="expectedRate100Matches">----</span></p>
+            <p>目標レート達成までの必要勝利数: <span id="neededWinsForTarget">----</span></p>
+
+            <h3>詳細なレート変動量 (1勝または1敗あたり)</h3>
+            <table id="rateChangeTable">
+                <thead>
+                    <tr>
+                        <th>相手ランク</th>
+                        <th>勝利時増減</th>
+                        <th>敗北時増減</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>かなり上</td><td id="gainMuchHigherCalculated"></td><td id="lossMuchHigherCalculated"></td></tr>
+                    <tr><td>やや上</td><td id="gainSlightlyHigherCalculated"></td><td id="lossSlightlyHigherCalculated"></td></tr>
+                    <tr><td>同等</td><td id="gainEqualCalculated"></td><td id="lossEqualCalculated"></td></tr>
+                    <tr><td>やや下</td><td id="gainSlightlyLowerCalculated"></td><td id="lossSlightlyLowerCalculated"></td></tr>
+                    <tr><td>かなり下</td><td id="gainMuchLowerCalculated"></td><td id="lossMuchLowerCalculated"></td></tr>
+                </tbody>
+            </table>
+
+            <h3>戦略的アドバイス</h3>
+            <p id="strategicAdvice">現在の入力に基づいてアドバイスが表示されます。</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
