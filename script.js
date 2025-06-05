@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const gainEqualCalculated = document.getElementById('gainEqualCalculated');
     const lossEqualCalculated = document.getElementById('lossEqualCalculated');
     const gainSlightlyLowerCalculated = document.getElementById('gainSlightlyLowerCalculated');
-    const lossSlightlyLowerCalculated = document.getElementById('lossSlightlyLowerCalculated'); // 誤字修正
+    const lossSlightlyLowerCalculated = document.getElementById('lossSlightlyLowerCalculated');
     const gainMuchLowerCalculated = document.getElementById('gainMuchLowerCalculated');
     const lossMuchLowerCalculated = document.getElementById('lossMuchLowerCalculated');
 
@@ -117,7 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalPlayers = parseFloat(totalPlayersInput.value);
 
         const tierRateInputs = {};
-        // Tier境界レートの必須入力チェック
         let allTierRatesFilled = true;
 
         // まずはフロンティアマスターの最高レートを取得
@@ -159,42 +158,183 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
 
-        // --- 2. 基本的な計算 ---
-        const totalMatches = wins + losses;
-        const currentWinRate = (wins / totalMatches) * 100;
+        // --- 新しいTier情報構造の構築とプレイヤー順位の特定 ---
+        const combinedTierInfo = [];
+        let currentRankCumulative = 0; // 各Tierの開始順位を計算するための累積
+        let previousTierMinRate = tierRateInputs['フロンティア マスター_最高'] + 1; // 一つ前のTierの最低レート（初期値はFM最高レート+1）
 
-        // --- 3. 100戦後のレート期待値と目標レート達成までの必要勝利数 ---
-        // 各相手レートとの差ごとのレート変動量を計算
-        const rateDifferences = {
-            muchHigher: 300, // かなりレートが高い (例: +300)
-            slightlyHigher: 100, // ややレートが高い (例: +100)
-            equal: 0, // 同等
-            slightlyLower: -100, // ややレートが低い (例: -100)
-            muchLower: -300 // かなりレートが低い (例: -300)
+        // 最上位Tier（フロンティアマスター）を最初に処理
+        const fmTier = TIER_DATA.find(tier => tier.name === 'フロンティア マスター');
+        if (fmTier) {
+            const fmMaxRate = tierRateInputs['フロンティア マスター_最高'];
+            const fmMinRate = tierRateInputs['フロンティア マスター'];
+            const fmPlayerCount = Math.ceil(totalPlayers * fmTier.percentage);
+            const fmStartRank = 1;
+            const fmEndRank = fmPlayerCount;
+
+            combinedTierInfo.push({
+                name: fmTier.name,
+                minRate: fmMinRate,
+                maxRate: fmMaxRate,
+                startRank: fmStartRank,
+                endRank: fmEndRank,
+                playerCount: fmPlayerCount
+            });
+            currentRankCumulative = fmEndRank; // 累積順位を更新
+            previousTierMinRate = fmMinRate; // 次のTierの最高レートの基準
+        }
+
+        // その他のTierをレートの高い順に処理（TierDataはマスターからブロンズ3の順）
+        // combinedTierInfo には逆順（レートの高い順）で追加していく
+        for (let i = 0; i < TIER_DATA.length; i++) {
+            const tier = TIER_DATA[i];
+            if (tier.name === 'フロンティア マスター') continue; // マスターは既に処理済み
+
+            const currentTierMinRate = tierRateInputs[tier.name];
+            let currentTierMaxRate;
+
+            // 次のTier（レートが高い側の隣接Tier）の最低レートから算出
+            // TierDataはマスターが0番目、ダイヤモンドが1番目...と並んでいる
+            const higherTierIndex = i - 1; // 自分のTierより一つ高いTierのインデックス
+            if (higherTierIndex >= 0) {
+                const higherTierName = TIER_DATA[higherTierIndex].name;
+                currentTierMaxRate = tierRateInputs[higherTierName] - 1; // 上のTierの最低レート-1
+            } else {
+                // これはマスターより上のTierは存在しないため、通常到達しないはず
+                currentTierMaxRate = previousTierMinRate - 1;
+            }
+            
+            // ブロンズ3の最大レートはブロンズ2の最低レート-1
+            // ブロンズ3の最低レートはtierRateInputs['ブロンズ 3']
+
+            const tierPlayerCount = Math.ceil(totalPlayers * tier.percentage);
+            const tierStartRank = currentRankCumulative + 1;
+            const tierEndRank = currentRankCumulative + tierPlayerCount;
+
+            combinedTierInfo.push({
+                name: tier.name,
+                minRate: currentTierMinRate,
+                maxRate: currentTierMaxRate,
+                startRank: tierStartRank,
+                endRank: tierEndRank,
+                playerCount: tierPlayerCount
+            });
+            currentRankCumulative = tierEndRank; // 累積順位を更新
+        }
+
+        // Tier外の情報を追加（ブロンズ3の最低レート未満）
+        const bronze3MinRate = tierRateInputs['ブロンズ 3'];
+        combinedTierInfo.push({
+            name: 'Tier外',
+            minRate: 0, // レート0から
+            maxRate: bronze3MinRate - 1, // ブロンズ3の最低レート未満
+            startRank: currentRankCumulative + 1,
+            endRank: totalPlayers, // 総プレイヤー数まで
+            playerCount: totalPlayers - currentRankCumulative
+        });
+
+        // combinedTierInfo をレートが高い順にソートしておく（今後の処理で便利）
+        combinedTierInfo.sort((a, b) => b.minRate - a.minRate);
+
+
+        // プレイヤーの現在の順位を推定する関数
+        // rate: プレイヤーのレート
+        function getEstimatedRankFromRate(rate) {
+            if (rate > tierRateInputs['フロンティア マスター_最高']) return 1; // 1位より上は1位
+            if (rate < tierRateInputs['ブロンズ 3']) return totalPlayers; // ブロンズ3より下は最下位付近
+
+            for (const tier of combinedTierInfo) {
+                if (rate >= tier.minRate && rate <= tier.maxRate) {
+                    // Tier内のレート範囲における線形補間
+                    if (tier.minRate === tier.maxRate) { // 境界値などでレート範囲が0の場合
+                        return tier.startRank;
+                    }
+                    const rateRange = tier.maxRate - tier.minRate;
+                    const rankRange = tier.endRank - tier.startRank;
+                    const positionInTier = (rate - tier.minRate) / rateRange;
+                    return Math.round(tier.startRank + (rankRange * positionInTier));
+                }
+            }
+            return 1; // 見つからない場合は最高位とする（エラー回避）
+        }
+
+        // 順位範囲から平均レートを推定する関数
+        // startRank, endRank: 順位範囲
+        function getAverageRateFromRankRange(startRank, endRank) {
+            // 順位範囲を丸める
+            startRank = Math.max(1, Math.min(totalPlayers, Math.round(startRank)));
+            endRank = Math.max(1, Math.min(totalPlayers, Math.round(endRank)));
+
+            if (startRank > endRank) {
+                [startRank, endRank] = [endRank, startRank]; // 逆転していたら入れ替え
+            }
+            if (startRank === endRank) { // 範囲が1の場合
+                return getRateFromRank(startRank); // 単一順位のレートを返す
+            }
+
+            let totalRate = 0;
+            let count = 0;
+
+            // 範囲内の各Tierを考慮して平均レートを算出
+            for (const tier of combinedTierInfo) {
+                const overlapStartRank = Math.max(startRank, tier.startRank);
+                const overlapEndRank = Math.min(endRank, tier.endRank);
+
+                if (overlapStartRank <= overlapEndRank) {
+                    // Tier内の平均レートを計算し、重複する順位数で重み付け
+                    const tierAverageRate = (tier.minRate + tier.maxRate) / 2;
+                    const numRanksInOverlap = overlapEndRank - overlapStartRank + 1;
+                    totalRate += tierAverageRate * numRanksInOverlap;
+                    count += numRanksInOverlap;
+                }
+            }
+            return count > 0 ? totalRate / count : currentRate; // 計算できない場合は自分のレートを返す
+        }
+
+        // 自分の現在の順位を推定
+        const currentRank = getEstimatedRankFromRate(currentRate);
+
+        // 各カテゴリの対戦相手の順位範囲と想定レートを定義
+        const opponentCategories = {
+            muchHigher: { rankOffsetStart: -30, rankOffsetEnd: -21, display: 'かなり高い' },
+            slightlyHigher: { rankOffsetStart: -20, rankOffsetEnd: -11, display: 'やや高い' },
+            equal: { rankOffsetStart: -10, rankOffsetEnd: 10, display: '同等' },
+            slightlyLower: { rankOffsetStart: 11, rankOffsetEnd: 20, display: 'やや低い' },
+            muchLower: { rankOffsetStart: 21, rankOffsetEnd: 30, display: 'かなり低い' }
         };
 
         let totalExpectedRateChangePerMatch = 0;
         const detailedRateChanges = {};
 
-        for (const category in rateDifferences) {
-            const rateDifference = rateDifferences[category];
-            const winRate = parsedWinRates[category]; // 修正: evalを使わず、直接オブジェクトから取得
-            const opponentRate = currentRate + rateDifference; // 相手のレート
+        for (const categoryKey in opponentCategories) {
+            const categoryInfo = opponentCategories[categoryKey];
+            
+            // 相手の順位範囲を計算 (1位〜総プレイヤー数に収める)
+            const opponentRankStart = Math.max(1, currentRank + categoryInfo.rankOffsetStart);
+            const opponentRankEnd = Math.min(totalPlayers, currentRank + categoryInfo.rankOffsetEnd);
+
+            // この順位範囲の平均レートを相手レートとする
+            const opponentRate = getAverageRateFromRankRange(opponentRankStart, opponentRankEnd);
+
+            const winRate = parsedWinRates[categoryKey];
 
             // レート計算式: 16 + (相手のレート - 自分のレート) * 0.04
             let gain = 16 + (opponentRate - currentRate) * 0.04; // 勝利時
             if (gain < 1) gain = 1; // 最低増加量を1とする
 
             // 敗北時計算式: -(16 + (自分のレート - 相手のレート) * 0.04) * ランクマッチ全体の勝利数/ランクマッチ全体の敗北数
-            // ランクマッチ全体の勝利数/ランクマッチ全体の敗北数はプレイヤーが確認できないため、1.0で固定
             let loss = -(16 + (currentRate - opponentRate) * 0.04) * 1.0; 
             if (loss > -1) loss = -1; // 最低減少量を-1とする
             
-            detailedRateChanges[category] = { gain: gain.toFixed(1), loss: loss.toFixed(1) };
+            detailedRateChanges[categoryKey] = { gain: gain.toFixed(1), loss: loss.toFixed(1) };
 
             // 期待レート変化量の計算
             totalExpectedRateChangePerMatch += (gain * winRate) + (loss * (1 - winRate));
         }
+
+        // --- 2. 基本的な計算 ---
+        const totalMatches = wins + losses;
+        const currentWinRate = (wins / totalMatches) * 100;
 
         const expectedRate100Matches = currentRate + (totalExpectedRateChangePerMatch * 100);
 
@@ -215,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gainEqualCalculated.textContent = `+${detailedRateChanges.equal.gain}`;
         lossEqualCalculated.textContent = `${detailedRateChanges.equal.loss}`;
         gainSlightlyLowerCalculated.textContent = `+${detailedRateChanges.slightlyLower.gain}`;
-        lossSlightlyLowerCalculated.textContent = `${detailedRateChanges.slightlyLower.loss}`; // 誤字修正
+        lossSlightlyLowerCalculated.textContent = `${detailedRateChanges.slightlyLower.loss}`;
         gainMuchLowerCalculated.textContent = `+${detailedRateChanges.muchLower.gain}`;
         lossMuchLowerCalculated.textContent = `${detailedRateChanges.muchLower.loss}`;
 
@@ -230,73 +370,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const tierRateTableBody = document.querySelector('#tierRateTable tbody');
         tierRateTableBody.innerHTML = ''; // 既存の行をクリア
         
-        let currentRankStart = 1; // 順位範囲の開始
-        // previousTierMinRateはフロンティアマスターの最低レート（かつダイヤモンドの最高レート）
-        // そのため、フロンティアマスターのレート帯は「フロンティアマスターの最低レート 〜 フロンティアマスターの最高レート」と表示
+        // combinedTierInfo を使ってテーブル表示
+        // Tier外は最後に表示するため、一旦combinedTierInfoから除外してソート
+        const tiersForDisplay = combinedTierInfo.filter(tier => tier.name !== 'Tier外');
+        tiersForDisplay.sort((a, b) => b.minRate - a.minRate); // レートの高い順にソート
 
-        // フロンティアマスター (最上位Tierの処理)
-        const fmTier = TIER_DATA.find(tier => tier.name === 'フロンティア マスター');
-        if (fmTier) {
-            const fmMaxRate = tierRateInputs['フロンティア マスター_最高']; // フロンティアマスターの最高レートは入力値から取得 (3500)
-            const fmMinRate = tierRateInputs['フロンティア マスター']; // フロンティアマスターの最低レートは入力値から取得 (3062)
-            const fmRankLimit = Math.ceil(totalPlayers * fmTier.percentage); // フロンティアマスターの順位範囲
-            
-            const row = tierRateTableBody.insertRow();
-            row.insertCell().textContent = fmTier.name;
-            row.insertCell().textContent = `${fmMinRate} 〜 ${fmMaxRate}`;
-            row.insertCell().textContent = `${currentRankStart} 〜 ${fmRankLimit}`;
-            currentRankStart = fmRankLimit + 1; // 次のTierの順位範囲開始を更新
-        }
-
-        // その他のTierの処理 (フロンティアマスターはすでに処理済みなのでスキップ)
-        // 配列を逆順に回して、一つ上のTierの最低レートを次のTierの最高レートとして利用できるようにする
-        // ブロンズ3からフロンティアプラチナまでを想定
-        for (let i = TIER_DATA.length - 1; i >= 0; i--) {
-            const tier = TIER_DATA[i];
-
-            // フロンティアマスターはすでに処理済みなのでスキップ
-            if (tier.name === 'フロンティア マスター') {
-                continue;
-            }
-
-            const rankLimit = Math.ceil(totalPlayers * tier.percentage);
-            const currentTierMinRate = tierRateInputs[tier.name];
-
-            // 次のTierの最高レートは、現在のTierの次のTierの最低レート - 1
-            // または、フロンティアマスターの場合、フロンティアマスターの最低レート - 1
-            let estimatedRateMax;
-            const nextTierIndex = TIER_DATA.findIndex(t => t.name === tier.name) -1; // TIER_DATA はマスターが0番目
-            if (nextTierIndex >= 0) {
-                 const nextTier = TIER_DATA[nextTierIndex];
-                 if (nextTier.name === 'フロンティア マスター') {
-                     estimatedRateMax = tierRateInputs['フロンティア マスター']; // フロンティアマスターの最低レート
-                 } else {
-                     estimatedRateMax = tierRateInputs[nextTier.name];
-                 }
-            } else {
-                // ここには到達しないはず (ブロンズ3から上に向かっているため)
-                estimatedRateMax = Infinity;
-            }
-            estimatedRateMax -= 1; // 境界レートは含まず
-
+        tiersForDisplay.forEach(tier => {
             const row = tierRateTableBody.insertRow();
             row.insertCell().textContent = tier.name;
-            row.insertCell().textContent = `${currentTierMinRate} 〜 ${estimatedRateMax}`;
-            row.insertCell().textContent = `${currentRankStart} 〜 ${currentRankStart + rankLimit - 1}`;
-            currentRankStart += rankLimit;
-        }
+            let rateRangeText;
+            if (tier.name === 'フロンティア マスター') {
+                rateRangeText = `${tier.minRate} 〜 ${tier.maxRate}`;
+            } else if (tier.name === 'ブロンズ 3') {
+                 // ブロンズ3の表示は特殊 (最高レートは一つ上のTierの最低レート-1)
+                const bronze2MinRate = tierRateInputs['ブロンズ 2'];
+                rateRangeText = `${tier.minRate} 〜 ${bronze2MinRate -1}`;
+            } else {
+                rateRangeText = `${tier.minRate} 〜 ${tier.maxRate}`;
+            }
+            row.insertCell().textContent = rateRangeText;
+            row.insertCell().textContent = `${tier.startRank} 〜 ${tier.endRank}`;
+        });
 
         // Tier外の表示
-        // ブロンズ3の最低レート未満はTier外
-        const bronze3MinRate = tierRateInputs['ブロンズ 3'];
-        const outOfTierRow = tierRateTableBody.insertRow();
-        outOfTierRow.insertCell().textContent = 'Tier外';
-        outOfTierRow.insertCell().textContent = `0 〜 ${bronze3MinRate - 1}`;
-        outOfTierRow.insertCell().textContent = `${currentRankStart} 〜 ${totalPlayers}`;
-
-
-        // --- イベントリスナーの登録 ---
-        calculateButton.addEventListener('click', calculateLadderStats);
+        const outOfTier = combinedTierInfo.find(tier => tier.name === 'Tier外');
+        if (outOfTier) {
+            const row = tierRateTableBody.insertRow();
+            row.insertCell().textContent = outOfTier.name;
+            row.insertCell().textContent = `${outOfTier.minRate} 〜 ${outOfTier.maxRate}`;
+            row.insertCell().textContent = `${outOfTier.startRank} 〜 ${outOfTier.endRank}`;
+        }
     }
 
     // ページロード時にTier境界レート入力欄を生成
@@ -304,4 +407,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ページロード時に計算を実行して初期表示
     calculateLadderStats();
+
+    // 入力値変更時に再計算
+    winsInput.addEventListener('input', calculateLadderStats);
+    lossesInput.addEventListener('input', calculateLadderStats);
+    currentRateInput.addEventListener('input', calculateLadderStats);
+    targetRateIncreaseInput.addEventListener('input', calculateLadderStats);
+    totalPlayersInput.addEventListener('input', calculateLadderStats);
+    winRateVsMuchHigherInput.addEventListener('input', calculateLadderStats);
+    winRateVsSlightlyHigherInput.addEventListener('input', calculateLadderStats);
+    winRateVsEqualInput.addEventListener('input', calculateLadderStats);
+    winRateVsSlightlyLowerInput.addEventListener('input', calculateLadderStats);
+    winRateVsMuchLowerInput.addEventListener('input', calculateLadderStats);
+    tierRateBoundariesDiv.addEventListener('input', calculateLadderStats); // Tier境界レート入力の変更を監視
+
 });
