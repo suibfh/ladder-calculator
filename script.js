@@ -76,7 +76,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tierRateBoundariesDiv.innerHTML = html;
     }
 
-    generateTierBoundaryInputs(); // ページロード時に生成
+    // ★修正済み: generateTierBoundaryInputs() を DOMContentLoaded 内で呼び出す
+    generateTierBoundaryInputs();
 
     // --- 計算実行関数 ---
     calculateButton.addEventListener('click', () => {
@@ -97,16 +98,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Tier境界レートの取得
         const customTierRates = {};
-        let allTierRatesProvided = true;
-        customTierRates['フロンティアマスターTop'] = parseFloat(document.getElementById('rateTierMasterTop').value);
-        if (isNaN(customTierRates['フロンティアマスターTop'])) allTierRatesProvided = false;
+        let allTierRatesProvided = true; // 全てのTierレートが提供されたかを示すフラグ
 
+        // マスターの最上位レートを取得
+        const masterTopRateInput = document.getElementById('rateTierMasterTop');
+        if (masterTopRateInput) { // 要素が存在するかチェック
+            customTierRates['フロンティアマスターTop'] = parseFloat(masterTopRateInput.value);
+            if (isNaN(customTierRates['フロンティアマスターTop'])) allTierRatesProvided = false;
+        } else {
+            allTierRatesProvided = false; // 要素自体がない場合も未提供とする
+        }
+        
         for (let i = 0; i < TIER_DATA.length; i++) {
             const tierName = TIER_DATA[i].name;
             const inputId = `rateTier${tierName.replace(/\s+/g, '')}Min`;
-            const rate = parseFloat(document.getElementById(inputId).value);
-            if (isNaN(rate)) allTierRatesProvided = false;
-            customTierRates[tierName] = rate;
+            const tierInput = document.getElementById(inputId);
+            
+            if (tierInput) { // 要素が存在するかチェック
+                const rate = parseFloat(tierInput.value);
+                if (isNaN(rate)) allTierRatesProvided = false;
+                customTierRates[tierName] = rate;
+            } else {
+                allTierRatesProvided = false; // 要素自体がない場合も未提供とする
+            }
         }
 
         // 必須入力項目のチェック
@@ -148,14 +162,12 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let i = 0; i < tierNames.length; i++) {
                 const tierName = tierNames[i];
                 const minRate = customTierRates[tierName];
-                const maxRate = (i === 0) ? customTierRates['フロンティアマスターTop'] : customTierRates[tierNames[i - 1]]; // 1つ上のTierのminRateがそのTierのmaxRate
+                // 各Tierの最大レートは、一つ上のTierの最低レート、または最上位Tierならカスタムされた最上位レート
+                const maxRate = (i === 0) ? customTierRates['フロンティアマスターTop'] : customTierRates[tierNames[i - 1]]; 
                 
                 // Tierの上限と下限レートを格納
                 tierRateBounds[tierName] = { min: minRate, max: maxRate };
             }
-            // マスターの最上位レートは特別扱い
-            tierRateBounds['フロンティア マスター'].max = customTierRates['フロンティアマスターTop'];
-
             // ユーザー入力の逆順レートチェック（降順になっているか）
             let prevRate = Infinity;
             for(const tierName of tierNames) {
@@ -170,21 +182,24 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             // ユーザーがTier境界レートを入力しない場合、参加人数とTier割合から推定
             // 最上位レートと最下位レートを仮定 (例: 2500～0)
-            const MAX_RATE = 2500;
-            const MIN_RATE = 0;
-            const rateRange = MAX_RATE - MIN_RATE;
+            const MAX_RATE_ESTIMATE = 2500; // 推定用の最大レート
+            const MIN_RATE_ESTIMATE = 0;   // 推定用の最小レート
+            const rateRangeEstimate = MAX_RATE_ESTIMATE - MIN_RATE_ESTIMATE;
 
             let currentCumulativePercentage = 0;
-            for (let i = 0; i < TIER_DATA.length; i++) {
+            // Tierの逆順でレート範囲を割り振る
+            for (let i = TIER_DATA.length - 1; i >= 0; i--) {
                 const tier = TIER_DATA[i];
                 const prevCumulativePercentage = currentCumulativePercentage;
                 currentCumulativePercentage += tier.percentage;
 
-                const estimatedMinRate = Math.max(MIN_RATE, Math.round(MAX_RATE - (rateRange * (currentCumulativePercentage / 100))));
-                const estimatedMaxRate = (i === 0) ? MAX_RATE : Math.round(MAX_RATE - (rateRange * (prevCumulativePercentage / 100)));
+                const estimatedMaxRate = Math.min(MAX_RATE_ESTIMATE, Math.round(MIN_RATE_ESTIMATE + (rateRangeEstimate * (currentCumulativePercentage / 100))));
+                const estimatedMinRate = (i === TIER_DATA.length - 1) ? MIN_RATE_ESTIMATE : Math.round(MIN_RATE_ESTIMATE + (rateRangeEstimate * (prevCumulativePercentage / 100)));
 
                 tierRateBounds[tier.name] = { min: estimatedMinRate, max: estimatedMaxRate };
             }
+            // 推定の場合、フロンティアマスターの最高レートも設定
+            tierRateBounds['フロンティア マスター'].max = MAX_RATE_ESTIMATE;
         }
         
         // Tierと推定レート帯の目安をテーブルとして表示
@@ -192,17 +207,19 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentTopRank = 1;
         for(let i = 0; i < TIER_DATA.length; i++) {
             const tier = TIER_DATA[i];
-            const numPlayersInTier = tier.rankLimit - (i > 0 ? TIER_DATA[i-1].rankLimit : 0); // 各Tierの人数
-            const bottomRank = tier.rankLimit;
-
+            // rankLimitは「～位まで」なので、Tier内の人数は直前のrankLimitからの差
+            const lowerRankLimit = (i > 0 ? TIER_DATA[i-1].rankLimit : 0);
+            const numPlayersInTier = tier.rankLimit - lowerRankLimit; 
+            
             const estimatedMinRate = tierRateBounds[tier.name].min;
             const estimatedMaxRate = tierRateBounds[tier.name].max;
 
-            tierEstimateHtml += `<tr><td>${tier.name}</td><td>${currentTopRank}位～${bottomRank}位</td><td>${estimatedMinRate}～${estimatedMaxRate}</td></tr>`;
-            currentTopRank = bottomRank + 1;
+            tierEstimateHtml += `<tr><td>${tier.name}</td><td>${currentTopRank}位～${tier.rankLimit}位</td><td>${estimatedMinRate}～${estimatedMaxRate}</td></tr>`;
+            currentTopRank = tier.rankLimit + 1; // 次のTierの開始順位
         }
         tierEstimateHtml += `</tbody></table>`;
         tierRateEstimatesDiv.innerHTML = tierEstimateHtml;
+
 
         // --- 対戦相手のレート選定と期待レート変動のシミュレーション ---
         const SIMULATION_MATCHES = 10000; // シミュレーション回数を増やす
@@ -213,99 +230,122 @@ document.addEventListener('DOMContentLoaded', () => {
         let playerTierMinRate = 0;
         let playerTierMaxRate = 0;
         for (const tierName in tierRateBounds) {
-            if (currentRate >= tierRateBounds[tierName].min && currentRate <= tierRateBounds[tierName].max) {
+            // Tierのレート範囲が逆転している場合を考慮 (min > max)
+            const min = Math.min(tierRateBounds[tierName].min, tierRateBounds[tierName].max);
+            const max = Math.max(tierRateBounds[tierName].min, tierRateBounds[tierName].max);
+
+            if (currentRate >= min && currentRate <= max) {
                 playerTierName = tierName;
-                playerTierMinRate = tierRateBounds[tierName].min;
-                playerTierMaxRate = tierRateBounds[tierName].max;
+                playerTierMinRate = min;
+                playerTierMaxRate = max;
                 break;
             }
         }
-        if (!playerTierName && currentRate > tierRateBounds[TIER_DATA[0].name].max) { // マスターより上の場合
-            playerTierName = TIER_DATA[0].name;
-            playerTierMinRate = tierRateBounds[TIER_DATA[0].name].min;
-            playerTierMaxRate = tierRateBounds[TIER_DATA[0].name].max;
+        // 最上位レートより高い場合や、最下位レートより低い場合の特殊処理
+        if (!playerTierName) {
+            // 全Tierの最小レートの中で最も低いもの (ブロンズ3のmin)
+            const overallMinRate = TIER_DATA.reduce((min, t) => Math.min(min, tierRateBounds[t.name].min), Infinity);
+            // 全Tierの最大レートの中で最も高いもの (マスターのmax)
+            const overallMaxRate = TIER_DATA.reduce((max, t) => Math.max(max, tierRateBounds[t.name].max), -Infinity);
+
+            if (currentRate > overallMaxRate) { // 全体より高いレートの場合
+                playerTierName = TIER_DATA[0].name; // マスターに分類
+                playerTierMinRate = tierRateBounds[TIER_DATA[0].name].min;
+                playerTierMaxRate = tierRateBounds[TIER_DATA[0].name].max;
+            } else if (currentRate < overallMinRate) { // 全体より低いレートの場合
+                playerTierName = TIER_DATA[TIER_DATA.length - 1].name; // ブロンズ3に分類
+                playerTierMinRate = tierRateBounds[TIER_DATA[TIER_DATA.length - 1].name].min;
+                playerTierMaxRate = tierRateBounds[TIER_DATA[TIER_DATA.length - 1].name].max;
+            }
         }
 
 
         // 自分の順位を推定 (Tier情報とレートから)
         let estimatedPlayerRank = 1;
         if (playerTierName) {
-            const currentTierIndex = TIER_DATA.findIndex(t => t.name === playerTierName);
-            const lowerTierRankLimit = (currentTierIndex > 0) ? TIER_DATA[currentTierIndex - 1].rankLimit : 0;
-            const currentTierPlayersCount = TIER_DATA[currentTierIndex].rankLimit - lowerTierRankLimit;
+            const currentTierData = TIER_DATA.find(t => t.name === playerTierName);
+            const currentTierIndex = TIER_DATA.indexOf(currentTierData);
+            
+            const lowerRankLimitOfPrevTier = (currentTierIndex > 0) ? TIER_DATA[currentTierIndex - 1].rankLimit : 0;
+            const currentTierPlayersCount = currentTierData.rankLimit - lowerRankLimitOfPrevTier;
             
             // Tier内のレート範囲と自分のレートから、Tier内での相対的な位置を計算
             if (playerTierMaxRate !== playerTierMinRate) {
+                // レートが高いほど順位が高いので、順位はレートに反比例する形で計算
                 const normalizedRate = (currentRate - playerTierMinRate) / (playerTierMaxRate - playerTierMinRate);
-                estimatedPlayerRank = Math.round(lowerTierRankLimit + currentTierPlayersCount * (1 - normalizedRate));
+                // Tier内での相対的な順位 (0がTierの最下位、1がTierの最上位)
+                const relativeRankInTier = 1 - normalizedRate; 
+                estimatedPlayerRank = Math.round(lowerRankLimitOfPrevTier + (currentTierPlayersCount * relativeRankInTier));
             } else { // Tierのレート範囲が0の場合 (例: 最上位Tierの1人のみ)
-                estimatedPlayerRank = TIER_DATA[currentTierIndex].rankLimit;
+                estimatedPlayerRank = currentTierData.rankLimit;
             }
             estimatedPlayerRank = Math.max(1, Math.min(totalPlayers, estimatedPlayerRank)); // 1位～総人数に収める
-        } else { // どのTierにも属さないレートの場合 (例: 0未満など)
+        } else { // どのTierにも属さないレートの場合 (非常に稀だが、念のため)
             estimatedPlayerRank = totalPlayers; // 最下位と仮定
         }
 
 
-        // 対戦相手のレートをシミュレートする関数
-        const getOpponentRate = (playerRank, totalPlayers, tierBounds) => {
-            const opponentRankOffset = Math.floor(Math.random() * 61) - 30; // -30 から +30 の範囲でランダムな順位差
-            let opponentRank = playerRank + opponentRankOffset;
+        // 順位からレートを推定するヘルパー関数
+        const getRateFromRank = (rank, totalPlayers, tierBounds) => {
+            if (rank <= 0) return tierBounds[TIER_DATA[0].name].max; // 1位より上は最上位レート
+            if (rank > totalPlayers) return tierBounds[TIER_DATA[TIER_DATA.length - 1].name].min; // 総人数より下は最下位レート
 
-            // 順位範囲の調整
-            if (playerRank <= 30) { // 1位～30位のプレイヤー
-                opponentRank = Math.max(opponentRank, 1); // 1位より下には行かない
-                opponentRank = Math.min(opponentRank, Math.min(totalPlayers, 31)); // 31位までしか選ばれない
-            } else if (playerRank >= totalPlayers - 29) { // 最下位30位のプレイヤー
-                opponentRank = Math.max(opponentRank, Math.max(1, totalPlayers - 30)); // 最下位から30位上まで
-                opponentRank = Math.min(opponentRank, totalPlayers); // 最下位より上には行かない
-            } else { // それ以外のプレイヤー
-                opponentRank = Math.max(opponentRank, playerRank - 30);
-                opponentRank = Math.min(opponentRank, playerRank + 30);
-            }
-            opponentRank = Math.max(1, Math.min(totalPlayers, opponentRank)); // 念のため1～総人数に収める
+            // ユーザーの入力または推定されたTier境界レートを基に、順位からレートを逆算
+            for (let i = 0; i < TIER_DATA.length; i++) {
+                const tier = TIER_DATA[i];
+                const lowerRankLimit = (i > 0 ? TIER_DATA[i-1].rankLimit : 0) + 1; // このTierの開始順位
+                const upperRankLimit = tier.rankLimit; // このTierの終了順位
 
-            // 順位からレートを推定
-            // 参加人数とTier境界レートを用いて、順位から逆算してレートを推定する
-            // 簡略化のため、Tierの割合とレート範囲を線形に割り振る（ユーザーがTierレートを入力した場合はより正確）
-            for (const tierName in tierRateBounds) {
-                const tierData = TIER_DATA.find(t => t.name === tierName);
-                if (!tierData) continue;
-
-                const lowerRank = (TIER_DATA.findIndex(t => t.name === tierName) > 0) ? TIER_DATA[TIER_DATA.findIndex(t => t.name === tierName) - 1].rankLimit + 1 : 1;
-                const upperRank = tierData.rankLimit;
-
-                if (opponentRank >= lowerRank && opponentRank <= upperRank) {
-                    const tierMinRate = tierRateBounds[tierName].min;
-                    const tierMaxRate = tierRateBounds[tierName].max;
+                if (rank >= lowerRankLimit && rank <= upperRankLimit) {
+                    const tierMinRate = tierRateBounds[tier.name].min;
+                    const tierMaxRate = tierRateBounds[tier.name].max;
                     
-                    // Tier内の順位からレートを線形補間
-                    const rankInTier = opponentRank - lowerRank;
-                    const totalRanksInTier = upperRank - lowerRank + 1;
-                    if (totalRanksInTier > 0) {
+                    const rankInTier = rank - lowerRankLimit; // そのTier内での相対順位（0～Tier内の人数-1）
+                    const totalRanksInTier = upperRankLimit - lowerRankLimit + 1; // Tier内の順位の幅
+
+                    if (totalRanksInTier <= 1) { // 1人しかいないTierの場合など
+                        return Math.round(tierMaxRate); // そのTierの最高レートを返す
+                    } else {
                         // レートが高いほど順位が高いので、レートは逆順に割り当てる
-                        const estimatedOpponentRate = tierMaxRate - (tierMaxRate - tierMinRate) * (rankInTier / totalRanksInTier);
-                        return Math.round(estimatedOpponentRate);
-                    } else { // 1人しかいないTierの場合など
-                        return Math.round(tierMaxRate);
+                        // rankInTierが0 (最上位) なら tierMaxRate に近く、rankInTierがtotalRanksInTier-1 (最下位) なら tierMinRate に近い
+                        const estimatedRate = tierMaxRate - (tierMaxRate - tierMinRate) * (rankInTier / (totalRanksInTier - 1));
+                        return Math.round(estimatedRate);
                     }
                 }
             }
-            return currentRate; // 万が一見つからなければ自分のレートを返す（フォールバック）
+            return currentRate; // フォールバック
         };
 
 
         for (let i = 0; i < SIMULATION_MATCHES; i++) {
-            const opponentRate = getOpponentRate(estimatedPlayerRank, totalPlayers, tierRateBounds);
+            // 対戦相手の順位を選定 (上下30人)
+            const opponentRankOffset = Math.floor(Math.random() * 61) - 30; // -30 から +30 の範囲
+            let opponentRank = estimatedPlayerRank + opponentRankOffset;
+
+            // 順位の上限・下限の調整
+            if (estimatedPlayerRank <= 31) { // プレイヤーが上位31位以内にいる場合
+                opponentRank = Math.max(1, opponentRank); // 1位より下には行かない
+                opponentRank = Math.min(opponentRank, Math.min(totalPlayers, 31)); // 31位までしか選ばれない
+            } else if (estimatedPlayerRank >= totalPlayers - 30) { // プレイヤーが下位30位以内にいる場合
+                opponentRank = Math.max(opponentRank, Math.max(1, totalPlayers - 30)); // 総人数-30位より上には行かない
+                opponentRank = Math.min(opponentRank, totalPlayers); // 総人数より上には行かない
+            } else { // それ以外のプレイヤー（通常の上下30位）
+                opponentRank = Math.max(opponentRank, estimatedPlayerRank - 30);
+                opponentRank = Math.min(opponentRank, estimatedPlayerRank + 30);
+            }
+            opponentRank = Math.max(1, Math.min(totalPlayers, opponentRank)); // 念のため1～総人数に収める
+
+
+            const opponentRate = getRateFromRank(opponentRank, totalPlayers, tierRateBounds);
             
             // 相手レートと自分のレートの差に応じたカテゴリを判定
             let opponentCategory;
-            const rateDiff = currentRate - opponentRate;
-            if (rateDiff >= 50) opponentCategory = 'muchLower'; // 自分がかなり高い
-            else if (rateDiff >= 15) opponentCategory = 'slightlyLower'; // 自分がやや高い
-            else if (rateDiff >= -15) opponentCategory = 'equal'; // ほぼ同等
-            else if (rateDiff >= -50) opponentCategory = 'slightlyHigher'; // 相手がやや高い
-            else opponentCategory = 'muchHigher'; // 相手がかなり高い
+            const rateDiff = currentRate - opponentRate; // 自分のレート - 相手のレート
+            if (rateDiff >= 50) opponentCategory = 'muchLower'; // 自分が相手よりかなり高い
+            else if (rateDiff >= 15) opponentCategory = 'slightlyLower'; // 自分が相手よりやや高い
+            else if (rateDiff > -15) opponentCategory = 'equal'; // ほぼ同等
+            else if (rateDiff > -50) opponentCategory = 'slightlyHigher'; // 相手が自分よりやや高い
+            else opponentCategory = 'muchHigher'; // 相手が自分よりかなり高い
 
             // 勝敗の確率 (ユーザー入力の勝利割合を使用)
             const winProbability = winRates[opponentCategory] / 100;
@@ -329,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (averageExpectedRateChangePerMatch > 0) {
             neededWins = Math.ceil(targetRateIncrease / averageExpectedRateChangePerMatch);
-            if (neededWins < 0) neededWins = 0;
+            if (neededWins < 0) neededWins = 0; // マイナスになった場合は0勝
         } else if (targetRateIncrease <= 0) { // 目標増加量が0以下なら0勝
              neededWins = 0;
         }
@@ -338,17 +378,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- 3. 詳細なレート変動量の表示 ---
         // 各カテゴリの代表的な相手レートを仮定して計算 (自身のレートとの差を基に)
         const detailedRateChanges = {};
-        const baseRateDiffs = { // 自分と相手のレート差
-            'muchHigher': -100, // 相手が100高い
-            'slightlyHigher': -30, // 相手が30高い
+        const baseRateDiffs = { // 相手のレート - 自分のレート
+            'muchHigher': 100, // 相手が100高い
+            'slightlyHigher': 30, // 相手が30高い
             'equal': 0,
-            'slightlyLower': 30, // 相手が30低い
-            'muchLower': 100 // 相手が100低い
+            'slightlyLower': -30, // 相手が30低い
+            'muchLower': -100 // 相手が100低い
         };
 
         for (const category in baseRateDiffs) {
-            const opponentRate = currentRate + baseRateDiffs[category];
-            const adjustedOpponentRate = Math.max(0, opponentRate); // レートが0未満にならないように調整
+            const simulatedOpponentRate = currentRate + baseRateDiffs[category];
+            const adjustedOpponentRate = Math.max(0, simulatedOpponentRate); // レートが0未満にならないように調整
 
             const gain = 16 + (adjustedOpponentRate - currentRate) * 0.04;
             const loss = (16 + (currentRate - adjustedOpponentRate) * 0.04) * (-1.0);
@@ -361,10 +401,10 @@ document.addEventListener('DOMContentLoaded', () => {
         lossSlightlyHigherCalculated.textContent = `${detailedRateChanges.slightlyHigher.loss}`;
         gainEqualCalculated.textContent = `+${detailedRateChanges.equal.gain}`;
         lossEqualCalculated.textContent = `${detailedRateChanges.equal.loss}`;
-        gainSlightlyLowerCalculated.textContent = `+${detailedRateChanges.gainSlightlyLower}`;
-        lossSlightlyLowerCalculated.textContent = `${detailedRateChanges.lossSlightlyLower}`;
-        gainMuchLowerCalculated.textContent = `+${detailedRateChanges.gainMuchLower}`;
-        lossMuchLowerCalculated.textContent = `${detailedRateChanges.lossMuchLower}`;
+        gainSlightlyLowerCalculated.textContent = `+${detailedRateChanges.slightlyLower.gain}`;
+        lossSlightlyLowerCalculated.textContent = `${detailedRateChanges.slightlyLower.loss}`;
+        gainMuchLowerCalculated.textContent = `+${detailedRateChanges.muchLower.gain}`;
+        lossMuchLowerCalculated.textContent = `${detailedRateChanges.muchLower.loss}`;
 
 
         // --- 4. 結果の表示 ---
