@@ -223,8 +223,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // ブロンズ3の最低レートは0で固定されるため、ここで特別に上限レートを設定
         if (tierRateBounds['ブロンズ 3']) {
             // ブロンズ3の最大レートは、ブロンズ2の最低レート（prevCheckRateはブロンズ3のループに入る直前のTierのminRate）
-            tierRateBounds['ブロンズ 3'].max = inputTierRates[TIER_DATA[TIER_DATA.length - 2].name]; 
-            if (tierRateBounds['ブロンズ 3'].max < tierRateBounds['ブロンズ 3'].min) { // もしブロンズ3のminがmaxより高い場合は入れ替える
+            // TIER_DATAの最後から2番目のTierがブロンズ2
+            const bronze2MinRate = inputTierRates[TIER_DATA[TIER_DATA.length - 2].name]; 
+            tierRateBounds['ブロンズ 3'].max = bronze2MinRate; 
+            
+            // もしブロンズ3のminがmaxより高い場合は入れ替える (これは降順チェックで弾かれるべきケースだが、念のため)
+            if (tierRateBounds['ブロンズ 3'].max < tierRateBounds['ブロンズ 3'].min) { 
                 const temp = tierRateBounds['ブロンズ 3'].min;
                 tierRateBounds['ブロンズ 3'].min = tierRateBounds['ブロンズ 3'].max;
                 tierRateBounds['ブロンズ 3'].max = temp;
@@ -242,7 +246,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const estimatedMinRate = tierRateBounds[tier.name].min;
             const estimatedMaxRate = tierRateBounds[tier.name].max;
 
-            tierEstimateHtml += `<tr><td>${tier.name}</td><td>${estimatedMinRate}～${estimatedMaxRate}</td><td>${rankLower}位～${rankUpper}位</td></tr>`; // 順位とレート帯の表示順序を入れ替えてみる
+            // ★ ここを修正: 順位範囲と推定レート帯の表示順序を元に戻す
+            tierEstimateHtml += `<tr><td>${tier.name}</td><td>${rankLower}位～${rankUpper}位</td><td>${estimatedMinRate}～${estimatedMaxRate}</td></tr>`;
         }
         tierEstimateHtml += `</tbody></table>`;
         tierRateEstimatesDiv.innerHTML = tierEstimateHtml;
@@ -273,18 +278,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const masterTier = TIER_DATA[0].name;
             const bronze3Tier = TIER_DATA[TIER_DATA.length - 1].name;
 
+            // currentRateがマスターの最上位レートより高い場合
             if (currentRate > tierRateBounds[masterTier].max) {
                 playerTierName = masterTier; 
-                playerTierMinRate = tierRateBounds[masterTier].min;
-                playerTierMaxRate = tierRateBounds[masterTier].max;
-            } else if (currentRate < tierRateBounds[bronze3Tier].min) {
+                playerTierMinRate = tierRateBounds[masterTier].max; // マスターの最上位レートを最低として扱う
+                playerTierMaxRate = tierRateBounds[masterTier].max + 100; // 仮に上限を設ける
+            } 
+            // currentRateがブロンズ3の最低レートより低い場合
+            else if (currentRate < tierRateBounds[bronze3Tier].min) {
                 playerTierName = bronze3Tier;
-                playerTierMinRate = tierRateBounds[bronze3Tier].min;
-                playerTierMaxRate = tierRateBounds[bronze3Tier].max;
+                playerTierMinRate = tierRateBounds[bronze3Tier].min - 100; // 仮に下限を設ける
+                playerTierMaxRate = tierRateBounds[bronze3Tier].min; // ブロンズ3の最低レートを最高として扱う
             } else {
-                 playerTierName = bronze3Tier; // 見つからない場合はブロンズ3と仮定（最終的にはこのケースは発生しないはず）
-                 playerTierMinRate = tierRateBounds[bronze3Tier].min;
-                 playerTierMaxRate = tierRateBounds[bronze3Tier].max;
+                 playerTierName = TIER_DATA[TIER_DATA.length - 1].name; // 見つからない場合はブロンズ3と仮定（最終的にはこのケースは発生しないはず）
+                 playerTierMinRate = tierRateBounds[playerTierName].min;
+                 playerTierMaxRate = tierRateBounds[playerTierName].max;
             }
         }
 
@@ -315,7 +323,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const masterTierName = TIER_DATA[0].name;
             const bronze3TierName = TIER_DATA[TIER_DATA.length - 1].name;
 
+            // 最高ランクの場合、マスターの最上位レートを返す
             if (rank <= TIER_DATA[0].rankLimit) return tierBounds[masterTierName].max; 
+            // 最低ランクの場合、ブロンズ3の最低レートを返す
             if (rank > TIER_DATA[TIER_DATA.length - 1].rankLimit) return tierBounds[bronze3TierName].min;
 
             for (let i = 0; i < TIER_DATA.length; i++) {
