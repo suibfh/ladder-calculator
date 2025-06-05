@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ladder Calculator</title> <link rel="stylesheet" href="style.css">
+    <title>Ladder Calculator</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>Ladder Calculator</h1> <div class="input-section">
+        <h1>Ladder Calculator</h1>
+
+        <div class="input-section">
             <h2>現状の入力</h2>
             <div class="input-group">
                 <label for="wins">現在の勝ち数:</label>
@@ -26,8 +29,15 @@
                 <input type="number" id="targetRateIncrease" value="200" min="0">
             </div>
             <div class="input-group">
-                <label for="totalPlayers">ランクマッチの参加人数:</label> <input type="number" id="totalPlayers" value="" placeholder="例: 10000" min="1">
-            </div>
+                <label for="totalPlayers">ランクマッチの参加人数:</label>
+                <input type="number" id="totalPlayers" value="250" placeholder="例: 10000" min="1"> </div>
+        </div>
+
+        <div class="input-section">
+            <h2>Tierの境界レート設定 (任意)</h2>
+            <p class="description">もし分かるようであれば、各Tierの最低レートを入力してください。シミュレーション精度が向上します。<br>未入力の場合は、参加人数とTier割合から自動で推定します。</p>
+            <div id="tierRateBoundaries">
+                </div>
         </div>
 
         <div class="input-section">
@@ -85,7 +95,7 @@
             <h3>Tierと推定レート帯の目安</h3>
             <div id="tierRateEstimates">
                 <p>ランクマッチ参加人数とTier割合に基づき、レート帯を推定します。</p>
-                </div>
+            </div>
         </div>
     </div>
 
