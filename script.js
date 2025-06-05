@@ -54,20 +54,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Tierの境界レート入力欄を動的に生成 ---
     // ★ 画面コピーの数値を初期値として設定
+    // ID名に合わせてキー名も変更
     const initialTierRates = {
-        'rateTierMasterTop': 3500, // フロンティア マスター (最上位レート)
-        'フロンティア マスター': 3062, // フロンティア マスター (最低レート)
-        'フロンティア ダイヤモンド': 2733,
-        'フロンティア プラチナ': 2628,
-        'ゴールド 1': 2369,
-        'ゴールド 2': 2181,
-        'ゴールド 3': 2074,
-        'シルバー 1': 1870,
-        'シルバー 2': 1745,
-        'シルバー 3': 1659,
-        'ブロンズ 1': 1579,
-        'ブロンズ 2': 1491,
-        'ブロンズ 3': 1029
+        'rateTierMasterTop': 3500,
+        'rateTierフロンティアマスターMin': 3062, // IDに合わせる
+        'rateTierフロンティアダイヤモンドMin': 2733,
+        'rateTierフロンティアプラチナMin': 2628,
+        'rateTierゴールド1Min': 2369,
+        'rateTierゴールド2Min': 2181,
+        'rateTierゴールド3Min': 2074,
+        'rateTierシルバー1Min': 1870,
+        'rateTierシルバー2Min': 1745,
+        'rateTierシルバー3Min': 1659,
+        'rateTierブロンズ1Min': 1579,
+        'rateTierブロンズ2Min': 1491,
+        'rateTierブロンズ3Min': 1029 // IDに合わせる
     };
 
     function generateTierBoundaryInputs() {
@@ -79,23 +80,24 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < TIER_DATA.length - 1; i++) {
             const tier = TIER_DATA[i];
             const tierNameWithoutSpace = tier.name.replace(/\s+/g, '');
-            const initialValue = initialTierRates[tier.name] !== undefined ? initialTierRates[tier.name] : '';
+            const inputId = `rateTier${tierNameWithoutSpace}Min`; // 生成されるID
+            const initialValue = initialTierRates[inputId] !== undefined ? initialTierRates[inputId] : ''; // IDで取得
             html += `<div class="input-group">
-                        <label for="rateTier${tierNameWithoutSpace}Min">${tier.name} (最低レート):</label>
-                        <input type="number" id="rateTier${tierNameWithoutSpace}Min" value="${initialValue}" placeholder="例: ${i === 0 ? '2000' : (1800 - i * 100)}" min="0">
+                        <label for="${inputId}">${tier.name} (最低レート):</label>
+                        <input type="number" id="${inputId}" value="${initialValue}" placeholder="例: ${i === 0 ? '2000' : (1800 - i * 100)}" min="0">
                     </div>`;
         }
         // ブロンズ3の初期値も設定
-        const bronze3InitialValue = initialTierRates['ブロンズ 3'] !== undefined ? initialTierRates['ブロンズ 3'] : 0;
+        const bronze3InputId = 'rateTierブロンズ3Min';
+        const bronze3InitialValue = initialTierRates[bronze3InputId] !== undefined ? initialTierRates[bronze3InputId] : 0;
         html += `<div class="input-group">
-                    <label for="rateTierBronze3Min">ブロンズ 3 (最低レート):</label>
-                    <input type="number" id="rateTierBronze3Min" value="${bronze3InitialValue}" min="0">
+                    <label for="${bronze3InputId}">ブロンズ 3 (最低レート):</label>
+                    <input type="number" id="${bronze3InputId}" value="${bronze3InitialValue}" min="0">
                 </div>`;
         tierRateBoundariesDiv.innerHTML = html;
     }
 
     // DOMContentLoadedリスナー内でTier境界レート入力を生成する
-    // これにより、calculateButtonのイベントリスナーが設定される前に要素がDOMに存在することを保証する
     generateTierBoundaryInputs();
 
     // --- 計算実行関数 ---
@@ -121,45 +123,45 @@ document.addEventListener('DOMContentLoaded', () => {
         let missingTierRateInput = false; // 未入力があるかのフラグ
 
         const masterTopRateInput = document.getElementById('rateTierMasterTop');
-        // ★ エラー修正: ここでmasterTopRateInputがnullでないことを確認
         if (masterTopRateInput) { 
             const masterTopRate = parseFloat(masterTopRateInput.value);
+            // NaNまたは空文字列（trim()後）の場合に未入力とする
             if (isNaN(masterTopRate) || masterTopRateInput.value.trim() === '') {
                 missingTierRateInput = true;
             } else {
-                inputTierRates['フロンティア マスター_top'] = masterTopRate;
+                inputTierRates['フロンティア マスター_top'] = masterTopRate; // シミュレーションで使うキー
             }
         } else {
-            missingTierRateInput = true; // 要素自体がない場合も未入力とみなす
+            missingTierRateInput = true; 
         }
         
         for (let i = 0; i < TIER_DATA.length; i++) {
             const tier = TIER_DATA[i];
             const tierName = tier.name;
-            const inputId = `rateTier${tierName.replace(/\s+/g, '')}Min`;
+            const inputId = `rateTier${tierName.replace(/\s+/g, '')}Min`; // 取得するID
             const tierInput = document.getElementById(inputId);
             
-            // ★ エラー修正: ここでtierInputがnullでないことを確認
             if (tierInput) {
                 const rate = parseFloat(tierInput.value);
+                // ブロンズ3の0は許容。それ以外のNaNまたは空文字列は未入力とみなす
                 if (isNaN(rate) || tierInput.value.trim() === '') {
                     if (!(tierName === 'ブロンズ 3' && tierInput.value.trim() === '0')) {
                         missingTierRateInput = true;
                         break; 
                     } else {
-                        inputTierRates[tierName] = 0; // ブロンズ3の0
+                        inputTierRates[tierName] = 0; // ブロンズ3の0を格納
                     }
                 } else {
-                    inputTierRates[tierName] = rate;
+                    inputTierRates[tierName] = rate; // 正しいレート値を格納
                 }
             } else {
-                missingTierRateInput = true; // 要素自体がない場合も未入力とみなす
+                missingTierRateInput = true; 
                 break;
             }
         }
 
         if (missingTierRateInput) {
-            alert('Tierの境界レート設定 (任意) のすべての項目を正しく入力してください。');
+            alert('Tierの境界レート設定 (任意) のすべての項目を正しく入力してください。\n（半角数字で、空欄がないようにしてください）');
             return;
         }
 
@@ -198,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < TIER_DATA.length; i++) {
             const tier = TIER_DATA[i];
             const tierName = tier.name;
-            const minRate = inputTierRates[tierName]; 
+            const minRate = inputTierRates[tierName]; // ここで取得する値は、inputTierRatesに格納されたTierの最低レート
             const maxRate = prevMaxRate; 
 
             tierRateBounds[tierName] = { min: minRate, max: maxRate };
@@ -220,7 +222,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         // ブロンズ3の最低レートは0で固定されるため、ここで特別に上限レートを設定
         if (tierRateBounds['ブロンズ 3']) {
-            tierRateBounds['ブロンズ 3'].max = prevCheckRate; // 直前のTierの最低レートがブロンズ3の最高レートになる
+            // ブロンズ3の最大レートは、ブロンズ2の最低レート（prevCheckRateはブロンズ3のループに入る直前のTierのminRate）
+            tierRateBounds['ブロンズ 3'].max = inputTierRates[TIER_DATA[TIER_DATA.length - 2].name]; 
+            if (tierRateBounds['ブロンズ 3'].max < tierRateBounds['ブロンズ 3'].min) { // もしブロンズ3のminがmaxより高い場合は入れ替える
+                const temp = tierRateBounds['ブロンズ 3'].min;
+                tierRateBounds['ブロンズ 3'].min = tierRateBounds['ブロンズ 3'].max;
+                tierRateBounds['ブロンズ 3'].max = temp;
+            }
         }
 
 
@@ -234,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const estimatedMinRate = tierRateBounds[tier.name].min;
             const estimatedMaxRate = tierRateBounds[tier.name].max;
 
-            tierEstimateHtml += `<tr><td>${tier.name}</td><td>${rankLower}位～${rankUpper}位</td><td>${estimatedMinRate}～${estimatedMaxRate}</td></tr>`;
+            tierEstimateHtml += `<tr><td>${tier.name}</td><td>${estimatedMinRate}～${estimatedMaxRate}</td><td>${rankLower}位～${rankUpper}位</td></tr>`; // 順位とレート帯の表示順序を入れ替えてみる
         }
         tierEstimateHtml += `</tbody></table>`;
         tierRateEstimatesDiv.innerHTML = tierEstimateHtml;
@@ -250,7 +258,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 自分の現在のTierを特定
         for (const tierName in tierRateBounds) {
-            // maxとminを入れ替えても対応できるようにMath.min/maxを使う
             const min = Math.min(tierRateBounds[tierName].min, tierRateBounds[tierName].max);
             const max = Math.max(tierRateBounds[tierName].min, tierRateBounds[tierName].max);
 
@@ -275,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 playerTierMinRate = tierRateBounds[bronze3Tier].min;
                 playerTierMaxRate = tierRateBounds[bronze3Tier].max;
             } else {
-                 playerTierName = bronze3Tier;
+                 playerTierName = bronze3Tier; // 見つからない場合はブロンズ3と仮定（最終的にはこのケースは発生しないはず）
                  playerTierMinRate = tierRateBounds[bronze3Tier].min;
                  playerTierMaxRate = tierRateBounds[bronze3Tier].max;
             }
