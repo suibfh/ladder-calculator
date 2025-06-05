@@ -148,29 +148,33 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // --- Tierと推定レート帯の目安の算出 ---
+        // --- 2. 各種計算処理 ---
+
+        // 総試合数と現在の勝率
+        const totalMatches = wins + losses; // totalMatchesはここで定義されます
+        const currentWinRate = totalMatches > 0 ? (wins / totalMatches) * 100 : 0;
+
+        // Tierと推定レート帯の目安の算出
         let tierRateBounds = {}; // 各Tierの最低/最高レートを格納
 
         if (allTierRatesProvided) {
-            // ★修正: ユーザーがすべてのTier境界レートを入力した場合
             const tierNames = TIER_DATA.map(t => t.name);
-            // 降順にソートしたTier名を使って境界を設定
-            const sortedTierNames = [...tierNames].reverse(); // ブロンズ3からマスターへ
+            const sortedTierNames = [...tierNames].reverse();
 
-            let prevMaxRate = customTierRates['フロンティアマスターTop']; // 最上位Tierのトップレートから開始
+            let prevMaxRate = customTierRates['フロンティアマスターTop'];
 
             for (let i = 0; i < sortedTierNames.length; i++) {
                 const tierName = sortedTierNames[i];
                 const minRate = customTierRates[tierName];
-                const maxRate = prevMaxRate; // 現在のTierの最高レートは、一つ前のTierの最低レート（下から見て）
+                const maxRate = prevMaxRate;
 
                 tierRateBounds[tierName] = { min: minRate, max: maxRate };
-                prevMaxRate = minRate; // 次のTierの最高レートは、現在のTierの最低レート
+                prevMaxRate = minRate;
             }
 
             // ユーザー入力の逆順レートチェック（降順になっているか）
             let prevRate = Infinity;
-            for(const tierName of tierNames) { // オリジナルの順番（マスターからブロンズ）でチェック
+            for(const tierName of tierNames) {
                 if (tierRateBounds[tierName].min > prevRate) {
                     alert('Tierの境界レートは降順になるように入力してください。');
                     return;
@@ -179,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } else {
-            // ユーザーがTier境界レートを入力しない場合、参加人数とTier割合から推定
             const MAX_RATE_ESTIMATE = 2500;
             const MIN_RATE_ESTIMATE = 0;
             const rateRangeEstimate = MAX_RATE_ESTIMATE - MIN_RATE_ESTIMATE;
@@ -226,8 +229,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 自分の現在のTierを特定
         for (const tierName in tierRateBounds) {
-            const min = Math.min(tierRateBounds[tierName].min, tierRateBounds[tierName].max); // 逆転防止
-            const max = Math.max(tierRateBounds[tierName].min, tierRateBounds[tierName].max); // 逆転防止
+            const min = Math.min(tierRateBounds[tierName].min, tierRateBounds[tierName].max);
+            const max = Math.max(tierRateBounds[tierName].min, tierRateBounds[tierName].max);
 
             if (currentRate >= min && currentRate <= max) {
                 playerTierName = tierName;
@@ -290,8 +293,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const upperRankLimit = tier.rankLimit;
 
                 if (rank >= lowerRankLimit && rank <= upperRankLimit) {
-                    const tierMinRate = tierBounds[tier.name].min; // tierBounds を参照
-                    const tierMaxRate = tierBounds[tier.name].max; // tierBounds を参照
+                    const tierMinRate = tierBounds[tier.name].min;
+                    const tierMaxRate = tierBounds[tier.name].max;
                     
                     const rankInTier = rank - lowerRankLimit;
                     const totalRanksInTier = upperRankLimit - lowerRankLimit + 1;
@@ -327,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
             opponentRank = Math.max(1, Math.min(totalPlayers, opponentRank));
 
 
-            const opponentRate = getRateFromRank(opponentRank, totalPlayers, tierRateBounds); // tierRateBounds を渡す
+            const opponentRate = getRateFromRank(opponentRank, totalPlayers, tierRateBounds);
             
             // 相手レートと自分のレートの差に応じたカテゴリを判定
             let opponentCategory;
@@ -370,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- 3. 詳細なレート変動量の表示 ---
         const detailedRateChanges = {};
-        const baseRateDiffs = { // 相手のレート - 自分のレート
+        const baseRateDiffs = {
             'muchHigher': 100,
             'slightlyHigher': 30,
             'equal': 0,
@@ -404,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         // --- 4. 結果の表示 ---
-        totalMatchesDisplay.textContent = totalMatches;
+        totalMatchesDisplay.textContent = totalMatches; // ここでtotalMatchesを使用
         currentWinRateDisplay.textContent = `${currentWinRate.toFixed(1)}%`;
         expectedRate100MatchesDisplay.textContent = Math.round(expectedRate100Matches);
         neededWinsForTargetDisplay.textContent = neededWins;
