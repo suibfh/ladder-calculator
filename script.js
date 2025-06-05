@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 詳細レート変動量テーブル要素
     const gainMuchHigherCalculated = document.getElementById('gainMuchHigherCalculated');
-    const lossMuchHigherCalculated = document.getElementById('lossMuchHigherCalculated'); // 修正済み
+    const lossMuchHigherCalculated = document.getElementById('lossMuchHigherCalculated');
     const gainSlightlyHigherCalculated = document.getElementById('gainSlightlyHigherCalculated');
     const lossSlightlyHigherCalculated = document.getElementById('lossSlightlyHigherCalculated');
     const gainEqualCalculated = document.getElementById('gainEqualCalculated');
@@ -95,36 +95,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Tier境界レートの取得
         const customTierRates = {};
-        let allTierRatesProvided = true;
+        let allTierRatesProvided = true; // すべての任意入力が提供されたかのフラグ
 
+        // フロンティア マスターの最上位レートのチェック
         const masterTopRateInput = document.getElementById('rateTierMasterTop');
-        if (masterTopRateInput) {
+        if (masterTopRateInput && masterTopRateInput.value !== '') { // 空欄でないことを確認
             const masterTopRate = parseFloat(masterTopRateInput.value);
-            if (isNaN(masterTopRate) || masterTopRateInput.value === '') {
+            if (isNaN(masterTopRate)) {
                 allTierRatesProvided = false;
             } else {
-                customTierRates['フロンティアマスターTop'] = masterTopRate;
+                customTierRates['フロンティア マスター'] = { top: masterTopRate }; // topレートとして格納
             }
         } else {
             allTierRatesProvided = false;
         }
         
+        // 各Tierの最低レートのチェック
         for (let i = 0; i < TIER_DATA.length; i++) {
-            const tierName = TIER_DATA[i].name;
+            const tier = TIER_DATA[i];
+            const tierName = tier.name;
             const inputId = `rateTier${tierName.replace(/\s+/g, '')}Min`;
             const tierInput = document.getElementById(inputId);
             
-            if (tierInput) {
+            if (tierInput && tierInput.value !== '') { // 空欄でないことを確認
                 const rate = parseFloat(tierInput.value);
-                if (tierInput.value === '0' && tierName === 'ブロンズ 3') {
-                     customTierRates[tierName] = 0;
-                } else if (isNaN(rate) || tierInput.value === '') {
+                if (isNaN(rate)) {
                     allTierRatesProvided = false;
                 } else {
-                    customTierRates[tierName] = rate;
+                    customTierRates[tierName] = { min: rate }; // minレートとして格納
                 }
             } else {
-                allTierRatesProvided = false;
+                // ブロンズ3の0は例外的に有効な入力とみなすが、それ以外は空欄でallTierRatesProvidedをfalseにする
+                if (!(tierName === 'ブロンズ 3' && tierInput && tierInput.value === '0')) {
+                    allTierRatesProvided = false;
+                } else {
+                    customTierRates[tierName] = { min: 0 }; // ブロンズ3の0
+                }
             }
         }
 
@@ -160,21 +166,24 @@ document.addEventListener('DOMContentLoaded', () => {
         let tierRateBounds = {}; // 各Tierの最低/最高レートを格納
 
         if (allTierRatesProvided) {
-            const tierNames = TIER_DATA.map(t => t.name);
-            
-            let prevMaxRate = customTierRates['フロンティアマスターTop'];
+            // ユーザーがすべてのTier境界レートを入力した場合、その値を優先
+            // TIER_DATAの順序（マスターからブロンズ）で処理
+            let prevMaxRate = customTierRates['フロンティア マスター'].top; // マスターのトップレートから開始
 
-            for (let i = 0; i < tierNames.length; i++) {
-                const tierName = tierNames[i];
-                const minRate = customTierRates[tierName];
+            for (let i = 0; i < TIER_DATA.length; i++) {
+                const tier = TIER_DATA[i];
+                const tierName = tier.name;
+                const minRate = customTierRates[tierName].min;
                 const maxRate = prevMaxRate; 
 
                 tierRateBounds[tierName] = { min: minRate, max: maxRate };
-                prevMaxRate = minRate;
+                prevMaxRate = minRate; // 次のTierの最高レートは、現在のTierの最低レート
             }
 
+            // ユーザー入力のレートが降順になっているか最終チェック
             let prevCheckRate = Infinity;
-            for(const tierName of tierNames) {
+            for(let i = 0; i < TIER_DATA.length; i++) {
+                const tierName = TIER_DATA[i].name;
                 if (tierRateBounds[tierName].min > prevCheckRate) {
                     alert('Tierの境界レートは降順になるように入力してください。');
                     return;
@@ -183,11 +192,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } else {
-            const MAX_RATE_ESTIMATE = 2500;
-            const MIN_RATE_ESTIMATE = 0;
+            // ユーザーがTier境界レートを入力しない場合、参加人数とTier割合から推定
+            const MAX_RATE_ESTIMATE = 2500; // 仮の最高レート
+            const MIN_RATE_ESTIMATE = 0;    // 仮の最低レート
             const rateRangeEstimate = MAX_RATE_ESTIMATE - MIN_RATE_ESTIMATE;
 
             let currentCumulativePercentage = 0;
+            // 下位Tierから順にレートを推定
             for (let i = TIER_DATA.length - 1; i >= 0; i--) {
                 const tier = TIER_DATA[i];
                 const prevCumulativePercentage = currentCumulativePercentage;
@@ -198,22 +209,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 tierRateBounds[tier.name] = { min: estimatedMinRate, max: estimatedMaxRate };
             }
+            // マスターの最高レートを明示的に設定
             tierRateBounds['フロンティア マスター'].max = MAX_RATE_ESTIMATE;
         }
         
         // Tierと推定レート帯の目安をテーブルとして表示
         let tierEstimateHtml = `<p>（推定レートは、レートが均等に分布すると仮定した場合、または入力された値に基づきます）</p><table><thead><tr><th>Tier</th><th>順位範囲</th><th>推定レート帯</th></tr></thead><tbody>`;
-        let currentTopRank = 1;
         for(let i = 0; i < TIER_DATA.length; i++) {
             const tier = TIER_DATA[i];
+            // ランク範囲はTIER_DATAから取得
             const rankLower = (i > 0 ? TIER_DATA[i-1].rankLimit : 0) + 1;
             const rankUpper = tier.rankLimit;
 
+            // ★ ここが重要: tierRateBoundsから正確な値を取得
             const estimatedMinRate = tierRateBounds[tier.name].min;
             const estimatedMaxRate = tierRateBounds[tier.name].max;
 
             tierEstimateHtml += `<tr><td>${tier.name}</td><td>${rankLower}位～${rankUpper}位</td><td>${estimatedMinRate}～${estimatedMaxRate}</td></tr>`;
-            currentTopRank = tier.rankLimit + 1;
         }
         tierEstimateHtml += `</tbody></table>`;
         tierRateEstimatesDiv.innerHTML = tierEstimateHtml;
@@ -355,8 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let neededWins = '算出不可';
 
         if (averageExpectedRateChangePerMatch > 0) {
-            // ★修正点: 変数名を averageExpectedRateChangePerMatch に修正
-            neededWins = Math.ceil(targetRateIncrease / averageExpectedRateChangePerMatch); 
+            neededWins = Math.ceil(targetRateIncrease / averageExpectedRateChangePerMatch);
             if (neededWins < 0) neededWins = 0;
         } else if (targetRateIncrease <= 0) {
              neededWins = 0;
