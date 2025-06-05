@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const gainEqualCalculated = document.getElementById('gainEqualCalculated');
     const lossEqualCalculated = document.getElementById('lossEqualCalculated');
     const gainSlightlyLowerCalculated = document.getElementById('gainSlightlyLowerCalculated');
-    const lossSlightallyLowerCalculated = document.getElementById('lossSlightlyLowerCalculated'); // 誤字修正
+    const lossSlightlyLowerCalculated = document.getElementById('lossSlightlyLowerCalculated'); // 誤字修正
     const gainMuchLowerCalculated = document.getElementById('gainMuchLowerCalculated');
     const lossMuchLowerCalculated = document.getElementById('lossMuchLowerCalculated');
 
@@ -144,12 +144,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 入力値の検証
-        if (isNaN(wins) || isNaN(losses) || isNaN(currentRate) || isNaN(targetRateIncrease) || isNaN(totalPlayers) ||
-            isNaN(winRateVsMuchHigher) || isNaN(winRateVsSlightlyHigher) || isNaN(winRateVsEqual) ||
-            isNaN(winRateVsSlightlyLower) || isNaN(winRateVsMuchLower) || totalPlayers <= 0) {
+        if (isNaN(wins) || isNaN(losses) || isNaN(currentRate) || isNaN(targetRateIncrease) || isNaN(totalPlayers) || totalPlayers <= 0) {
             alert('すべての入力項目に適切な数値を入力してください。');
             return;
         }
+        
+        // 勝率入力値のパースと格納
+        const parsedWinRates = {
+            muchHigher: parseFloat(winRateVsMuchHigherInput.value) / 100,
+            slightlyHigher: parseFloat(winRateVsSlightlyHigherInput.value) / 100,
+            equal: parseFloat(winRateVsEqualInput.value) / 100,
+            slightlyLower: parseFloat(winRateVsSlightlyLowerInput.value) / 100,
+            muchLower: parseFloat(winRateVsMuchLowerInput.value) / 100
+        };
+
 
         // --- 2. 基本的な計算 ---
         const totalMatches = wins + losses;
@@ -157,12 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- 3. 100戦後のレート期待値と目標レート達成までの必要勝利数 ---
         // 各相手レートとの差ごとのレート変動量を計算
-        const winRateVsMuchHigher = parseFloat(winRateVsMuchHigherInput.value) / 100;
-        const winRateVsSlightlyHigher = parseFloat(winRateVsSlightlyHigherInput.value) / 100;
-        const winRateVsEqual = parseFloat(winRateVsEqualInput.value) / 100;
-        const winRateVsSlightlyLower = parseFloat(winRateVsSlightlyLowerInput.value) / 100;
-        const winRateVsMuchLower = parseFloat(winRateVsMuchLowerInput.value) / 100;
-
         const rateDifferences = {
             muchHigher: 300, // かなりレートが高い (例: +300)
             slightlyHigher: 100, // ややレートが高い (例: +100)
@@ -176,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         for (const category in rateDifferences) {
             const rateDifference = rateDifferences[category];
-            const winRate = eval(`winRateVs${category.charAt(0).toUpperCase() + category.slice(1)}`);
+            const winRate = parsedWinRates[category]; // 修正: evalを使わず、直接オブジェクトから取得
             const opponentRate = currentRate + rateDifference; // 相手のレート
 
             // レート計算式: 16 + (相手のレート - 自分のレート) * 0.04
@@ -213,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gainEqualCalculated.textContent = `+${detailedRateChanges.equal.gain}`;
         lossEqualCalculated.textContent = `${detailedRateChanges.equal.loss}`;
         gainSlightlyLowerCalculated.textContent = `+${detailedRateChanges.slightlyLower.gain}`;
-        lossSlightallyLowerCalculated.textContent = `${detailedRateChanges.slightlyLower.loss}`;
+        lossSlightlyLowerCalculated.textContent = `${detailedRateChanges.slightlyLower.loss}`; // 誤字修正
         gainMuchLowerCalculated.textContent = `+${detailedRateChanges.muchLower.gain}`;
         lossMuchLowerCalculated.textContent = `${detailedRateChanges.muchLower.loss}`;
 
@@ -229,10 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tierRateTableBody.innerHTML = ''; // 既存の行をクリア
         
         let currentRankStart = 1; // 順位範囲の開始
-        let previousTierMinRate = tierRateInputs['フロンティア マスター_最高'] + 1; // 一つ前のTierの最低レート (最初はフロンティアマスターの最高レート+1で初期化)
-
-        // TIER_DATAを逆順に処理して、上のTierからレート範囲を確定していく
-        // ただし、フロンティアマスターは特殊なため最初に個別に処理する
+        // previousTierMinRateはフロンティアマスターの最低レート（かつダイヤモンドの最高レート）
+        // そのため、フロンティアマスターのレート帯は「フロンティアマスターの最低レート 〜 フロンティアマスターの最高レート」と表示
 
         // フロンティアマスター (最上位Tierの処理)
         const fmTier = TIER_DATA.find(tier => tier.name === 'フロンティア マスター');
@@ -246,7 +246,6 @@ document.addEventListener('DOMContentLoaded', () => {
             row.insertCell().textContent = `${fmMinRate} 〜 ${fmMaxRate}`;
             row.insertCell().textContent = `${currentRankStart} 〜 ${fmRankLimit}`;
             currentRankStart = fmRankLimit + 1; // 次のTierの順位範囲開始を更新
-            previousTierMinRate = fmMinRate; // 次のTierの最高レートとして利用
         }
 
         // その他のTierの処理 (フロンティアマスターはすでに処理済みなのでスキップ)
@@ -262,30 +261,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const rankLimit = Math.ceil(totalPlayers * tier.percentage);
             const currentTierMinRate = tierRateInputs[tier.name];
-            let estimatedRateMax = previousTierMinRate - 1; // 一つ上のTierの最低レートより1低いレート
 
-            if (tier.name === 'ブロンズ 3') {
-                // ブロンズ3の特別処理
-                const row = tierRateTableBody.insertRow();
-                row.insertCell().textContent = tier.name;
-                row.insertCell().textContent = `${currentTierMinRate} 〜 ${estimatedRateMax}`;
-                row.insertCell().textContent = `${currentRankStart} 〜 ${currentRankStart + rankLimit - 1}`;
-                currentRankStart += rankLimit;
-
-                // Tier外の表示
-                const outOfTierRow = tierRateTableBody.insertRow();
-                outOfTierRow.insertCell().textContent = 'Tier外';
-                outOfTierRow.insertCell().textContent = `0 〜 ${currentTierMinRate - 1}`; // ブロンズ3の最低レート未満
-                outOfTierRow.insertCell().textContent = `${currentRankStart} 〜 ${totalPlayers}`; // ブロンズ3の下限より下
+            // 次のTierの最高レートは、現在のTierの次のTierの最低レート - 1
+            // または、フロンティアマスターの場合、フロンティアマスターの最低レート - 1
+            let estimatedRateMax;
+            const nextTierIndex = TIER_DATA.findIndex(t => t.name === tier.name) -1; // TIER_DATA はマスターが0番目
+            if (nextTierIndex >= 0) {
+                 const nextTier = TIER_DATA[nextTierIndex];
+                 if (nextTier.name === 'フロンティア マスター') {
+                     estimatedRateMax = tierRateInputs['フロンティア マスター']; // フロンティアマスターの最低レート
+                 } else {
+                     estimatedRateMax = tierRateInputs[nextTier.name];
+                 }
             } else {
-                const row = tierRateTableBody.insertRow();
-                row.insertCell().textContent = tier.name;
-                row.insertCell().textContent = `${currentTierMinRate} 〜 ${estimatedRateMax}`;
-                row.insertCell().textContent = `${currentRankStart} 〜 ${currentRankStart + rankLimit - 1}`;
-                currentRankStart += rankLimit;
+                // ここには到達しないはず (ブロンズ3から上に向かっているため)
+                estimatedRateMax = Infinity;
             }
-            previousTierMinRate = currentTierMinRate; // 次のTierの最高レートとして利用
+            estimatedRateMax -= 1; // 境界レートは含まず
+
+            const row = tierRateTableBody.insertRow();
+            row.insertCell().textContent = tier.name;
+            row.insertCell().textContent = `${currentTierMinRate} 〜 ${estimatedRateMax}`;
+            row.insertCell().textContent = `${currentRankStart} 〜 ${currentRankStart + rankLimit - 1}`;
+            currentRankStart += rankLimit;
         }
+
+        // Tier外の表示
+        // ブロンズ3の最低レート未満はTier外
+        const bronze3MinRate = tierRateInputs['ブロンズ 3'];
+        const outOfTierRow = tierRateTableBody.insertRow();
+        outOfTierRow.insertCell().textContent = 'Tier外';
+        outOfTierRow.insertCell().textContent = `0 〜 ${bronze3MinRate - 1}`;
+        outOfTierRow.insertCell().textContent = `${currentRankStart} 〜 ${totalPlayers}`;
+
 
         // --- イベントリスナーの登録 ---
         calculateButton.addEventListener('click', calculateLadderStats);
