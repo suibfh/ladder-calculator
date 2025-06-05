@@ -14,15 +14,19 @@
             <h2>現状の入力</h2>
             <div class="input-group">
                 <label for="wins">現在の勝ち数:</label>
-                <input type="number" id="wins" value="0" min="0">
+                <input type="number" id="wins" value="100" min="0">
             </div>
             <div class="input-group">
                 <label for="losses">現在の負け数:</label>
-                <input type="number" id="losses" value="0" min="0">
+                <input type="number" id="losses" value="70" min="0">
             </div>
             <div class="input-group">
                 <label for="currentRate">現在のレート:</label>
-                <input type="number" id="currentRate" value="" placeholder="例: 1500" min="0">
+                <input type="number" id="currentRate" value="2059" placeholder="例: 1500" min="0">
+            </div>
+            <div class="input-group">
+                <label for="myRank">自分の順位:</label>
+                <input type="number" id="myRank" value="75" min="1">
             </div>
             <div class="input-group">
                 <label for="targetRateIncrease">目標レート増加量:</label>
@@ -30,7 +34,7 @@
             </div>
             <div class="input-group">
                 <label for="totalPlayers">ランクマッチの参加人数:</label>
-                <input type="number" id="totalPlayers" value="" placeholder="例: 253" min="1">
+                <input type="number" id="totalPlayers" value="253" placeholder="例: 253" min="1">
             </div>
         </div>
 
@@ -97,7 +101,7 @@
             <h2>対戦相手レート別の勝利割合 (%)</h2>
             <div class="input-group">
                 <label for="winRateVsMuchHigher">かなり高い相手:</label>
-                <input type="number" id="winRateVsMuchHigher" value="50" min="0" max="100">
+                <input type="number" id="winRateVsMuchHigher" value="30" min="0" max="100">
             </div>
             <div class="input-group">
                 <label for="winRateVsSlightlyHigher">やや高い相手:</label>
@@ -105,24 +109,26 @@
             </div>
             <div class="input-group">
                 <label for="winRateVsEqual">同等相手:</label>
-                <input type="number" id="winRateVsEqual" value="50" min="0" max="100">
+                <input type="number" id="winRateVsEqual" value="70" min="0" max="100">
             </div>
             <div class="input-group">
                 <label for="winRateVsSlightlyLower">やや低い相手:</label>
-                <input type="number" id="winRateVsSlightlyLower" value="50" min="0" max="100">
+                <input type="number" id="winRateVsSlightlyLower" value="70" min="0" max="100">
             </div>
             <div class="input-group">
                 <label for="winRateVsMuchLower">かなり低い相手:</label>
-                <input type="number" id="winRateVsMuchLower" value="50" min="0" max="100">
+                <input type="number" id="winRateVsMuchLower" value="80" min="0" max="100">
             </div>
         </div>
 
         <button id="calculateButton">計算する</button>
 
         <div class="output-section">
+            <p id="validationMessage" class="error-message"></p>
             <h2>計算結果</h2>
             <p>現在の総試合数: <span id="totalMatchesDisplay">0</span></p>
             <p>現在の勝率: <span id="currentWinRate">0.0%</span></p>
+            <p>現在のTier: <span id="currentTierDisplay">-</span></p>
             <p>今後100試合した場合のレート期待値: <span id="expectedRate100Matches">0</span></p>
             <p>目標レート達成までの必要勝利数: <span id="neededWinsForTarget">0</span></p>
 
@@ -151,8 +157,10 @@
                     <thead>
                         <tr>
                             <th>順位範囲</th>
-                            <th>Tier名</th> <th>推定レート帯</th>
-                            <th>人数</th> </tr>
+                            <th>Tier名</th>
+                            <th>推定レート帯</th>
+                            <th>人数</th>
+                        </tr>
                     </thead>
                     <tbody>
                         </tbody>
