@@ -30,47 +30,47 @@
             </div>
             <div class="input-group">
                 <label for="totalPlayers">ランクマッチの参加人数:</label>
-                <input type="number" id="totalPlayers" value="" placeholder="例: 250" min="1">
+                <input type="number" id="totalPlayers" value="250" placeholder="例: 10000" min="1">
             </div>
-        </div>
+            </div>
 
         <div class="input-section">
-            <h2>Tierの境界レート設定</h2>
-            <p class="description">各Tierの最低レートを正しく入力してください。シミュレーション精度が向上します。<br>この入力は必須です。</p>
+            <h2>Tierの境界レート設定 (任意)</h2>
+            <p class="description">もし分かるようであれば、各Tierの最低レートを入力してください。シミュレーション精度が向上します。<br>未入力の場合は、参加人数とTier割合から自動で推定します。</p>
             <div id="tierRateBoundaries">
                 </div>
         </div>
 
         <div class="input-section">
-            <h2>対戦相手レート別の勝利割合 (%)</h2>
-            <p class="description">シミュレーションの精度を上げるため、ご自身の体感で構いませんので入力してください。すべて0～100の範囲で入力してください。</p>
+            <h2>対戦相手レート別の勝利割合</h2>
+            <p class="description">各レート帯の相手にどのくらいの確率で勝利しているか設定してください。</p>
             <div class="input-group">
-                <label for="winRateVsMuchHigher">相手レートがかなり高い場合:</label>
-                <input type="number" id="winRateVsMuchHigher" value="30" min="0" max="100">
+                <label for="winRateVsMuchHigher">自分よりかなりレートが高い相手への勝利割合 (%):</label>
+                <input type="number" id="winRateVsMuchHigher" value="" placeholder="例: 30" min="0" max="100">
             </div>
             <div class="input-group">
-                <label for="winRateVsSlightlyHigher">相手レートがやや高い場合:</label>
-                <input type="number" id="winRateVsSlightlyHigher" value="40" min="0" max="100">
+                <label for="winRateVsSlightlyHigher">自分よりややレートが高い相手への勝利割合 (%):</label>
+                <input type="number" id="winRateVsSlightlyHigher" value="" placeholder="例: 45" min="0" max="100">
             </div>
             <div class="input-group">
-                <label for="winRateVsEqual">相手レートが同等の場合:</label>
-                <input type="number" id="winRateVsEqual" value="50" min="0" max="100">
+                <label for="winRateVsEqual">自分と同等のレートの相手への勝利割合 (%):</label>
+                <input type="number" id="winRateVsEqual" value="" placeholder="例: 50" min="0" max="100">
             </div>
             <div class="input-group">
-                <label for="winRateVsSlightlyLower">相手レートがやや低い場合:</label>
-                <input type="number" id="winRateVsSlightlyLower" value="60" min="0" max="100">
+                <label for="winRateVsSlightlyLower">自分よりややレートが低い相手への勝利割合 (%):</label>
+                <input type="number" id="winRateVsSlightlyLower" value="" placeholder="例: 55" min="0" max="100">
             </div>
             <div class="input-group">
-                <label for="winRateVsMuchLower">相手レートがかなり低い場合:</label>
-                <input type="number" id="winRateVsMuchLower" value="70" min="0" max="100">
+                <label for="winRateVsMuchLower">自分よりかなりレートが低い相手への勝利割合 (%):</label>
+                <input type="number" id="winRateVsMuchLower" value="" placeholder="例: 70" min="0" max="100">
             </div>
         </div>
 
-        <button id="calculateButton">シミュレーション実行</button>
+        <button id="calculateButton">結果を計算</button>
 
         <div class="output-section">
-            <h2>シミュレーション結果</h2>
-            <p>総試合数: <span id="totalMatchesDisplay">--</span></p>
+            <h2>計算結果</h2>
+            <p>現在の総試合数: <span id="totalMatchesDisplay">--</span></p>
             <p>現在の勝率: <span id="currentWinRate">--.-%</span></p>
             <p>100戦後のレート期待値: <span id="expectedRate100Matches">----</span></p>
             <p>目標レート達成までの必要勝利数: <span id="neededWinsForTarget">----</span></p>
@@ -95,8 +95,8 @@
 
             <h3>Tierと推定レート帯の目安</h3>
             <div id="tierRateEstimates">
-                <p>ランクマッチ参加人数とTier割合に基づき、各Tierの推定レート帯を表示します。</p>
-                </div>
+                <p>ランクマッチ参加人数とTier割合に基づき、レート帯を推定します。</p>
+            </div>
         </div>
     </div>
 
