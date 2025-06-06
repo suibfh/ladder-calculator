@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < count; i++) {
             const opponentDiv = document.createElement('div');
             opponentDiv.className = 'opponent-input';
-            // 名前入力欄を削除し、レートと勝率を横並びに
             opponentDiv.innerHTML = `
                 <h3>対戦相手 ${i + 1}</h3>
                 <div class="input-row">
@@ -139,7 +138,8 @@ document.addEventListener('DOMContentLoaded', () => {
             textColor = '#555'; // グレー系の色
         }
 
-        resultText = `<p><strong>${totalBattles}回</strong>の戦闘をシミュレートした結果、レートは <span style="color: ${textColor};"><strong>${rateDisplay}</strong></span> 増加する期待値です。このまま戦い続ければ、レートは【${trendText}】傾向にあります。</p>`;
+        // 修正された文言を適用
+        resultText = `<p><strong>${totalBattles}回</strong>の戦闘をシミュレートした結果、レート期待値は <span style="color: ${textColor};"><strong>${rateDisplay}</strong></span> です。このまま戦い続ければ、レートは【${trendText}】傾向にあります。</p>`;
         
         simulationResultDiv.innerHTML = resultText;
         simulateButton.disabled = false; // ボタンを再度有効化

@@ -9,6 +9,7 @@
 <body>
     <div class="container">
         <h1>ランクマッチレートシミュレータ</h1>
+
         <div class="input-section">
             <h2>対戦相手情報の入力</h2>
             <div class="form-group">
@@ -25,7 +26,7 @@
             <h2>シミュレーション設定</h2>
             <div class="form-group">
                 <label for="totalBattles">総戦闘回数:</label>
-                <input type="number" id="totalBattles" min="1" step="100">
+                <input type="number" id="totalBattles" value="1000" min="1" step="100">
             </div>
         </div>
 
@@ -36,7 +37,7 @@
             <div id="simulationResult">
                 <p>「シミュレーション開始」ボタンを押すと結果が表示されます。</p>
             </div>
-            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
