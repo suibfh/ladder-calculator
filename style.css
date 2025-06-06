@@ -1,190 +1,188 @@
-/* 基本的なリセットとフォント設定 */
+/* ベーススタイル */
 body {
-    font-family: 'Segoe UI', 'Meiryo', sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     margin: 0;
     padding: 20px;
-    background-color: #f4f7f6; /* やや明るい背景色 */
+    background-color: #f4f7f6;
     color: #333;
     display: flex;
     justify-content: center;
     align-items: flex-start; /* 上部に寄せる */
-    min-height: 100vh; /* 少なくともビューポートの高さ */
-    box-sizing: border-box; /* paddingをwidthに含める */
+    min-height: 100vh;
+    box-sizing: border-box; /* paddingを含めて要素の幅を計算 */
 }
 
 .container {
-    background-color: #ffffff;
-    padding: 30px;
-    border-radius: 10px;
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    max-width: 800px; /* PCでの最大幅 */
-    width: 100%; /* スマホでの幅いっぱい */
+    max-width: 600px; /* PCでの最大幅 */
+    width: 100%; /* スマホでの幅を100%に */
     box-sizing: border-box;
 }
 
 h1, h2 {
-    color: #2c3e50; /* ダークな見出し色 */
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-size: 1.8em;
+}
+
+h2 {
+    font-size: 1.4em;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+    margin-top: 30px;
+}
+
+/* 説明文 */
+.description {
+    font-size: 0.95em;
+    color: #555;
     text-align: center;
     margin-bottom: 25px;
-    border-bottom: 2px solid #ecf0f1; /* 控えめな下線 */
-    padding-bottom: 10px;
 }
 
-h3 {
-    color: #34495e; /* やや明るい見出し色 */
-    margin-top: 30px;
-    margin-bottom: 15px;
-    border-bottom: 1px dashed #e0e0e0; /* 細い点線の下線 */
-    padding-bottom: 5px;
+/* 入力セクション */
+.input-section {
+    margin-bottom: 25px;
+    padding: 15px;
+    background-color: #fdfdfd;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
 }
 
-.input-section, .output-section {
-    margin-bottom: 30px;
-}
-
-.input-group {
+.form-group {
     margin-bottom: 15px;
 }
 
-.input-group label {
+.form-group label {
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
     font-weight: bold;
-    color: #555;
+    color: #444;
 }
 
-.input-group input[type="number"],
-.input-group input[type="text"] {
-    width: calc(100% - 22px); /* paddingとborderを考慮 */
+.form-group input[type="number"],
+.form-group select {
+    width: calc(100% - 20px); /* paddingを考慮 */
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
     font-size: 1em;
-    box-sizing: border-box; /* paddingをwidthに含める */
+    box-sizing: border-box; /* paddingを含めて幅を計算 */
+    -webkit-appearance: none; /* iOS Safariのデフォルトスタイルを無効化 */
+    -moz-appearance: none;    /* Firefoxのデフォルトスタイルを無効化 */
+    appearance: none;         /* 標準のデフォルトスタイルを無効化 */
+    background-color: #fff;
+    background-image: linear-gradient(45deg, transparent 50%, #666 50%), linear-gradient(135deg, #666 50%, transparent 50%), linear-gradient(to right, #ccc, #ccc); /* ドロップダウン矢印 */
+    background-position: calc(100% - 15px) calc(1em + 2px), calc(100% - 10px) calc(1em + 2px), calc(100% - 2.5em) 0.5em;
+    background-size: 5px 5px, 5px 5px, 1px 1.5em;
+    background-repeat: no-repeat;
 }
 
-.input-group-inline {
-    display: flex;
-    align-items: center;
+
+/* 各対戦相手の入力ブロック */
+.opponent-input {
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+}
+
+.opponent-input input[type="text"],
+.opponent-input input[type="number"] {
+    width: calc(100% - 20px);
+    padding: 8px;
     margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
 }
 
-.input-group-inline label {
-    flex: 2; /* ラベルの幅を調整 */
-    margin-right: 10px;
-    font-weight: normal; /* 個別入力欄のラベルは太字にしない */
-    color: #666;
-}
-
-.input-group-inline input[type="number"] {
-    flex: 1; /* 入力欄の幅を調整 */
-    max-width: 120px; /* 最大幅を設定して揃える */
-}
-
-
-.description {
-    font-size: 0.9em;
-    color: #777;
-    margin-top: -10px;
-    margin-bottom: 10px;
-    line-height: 1.4;
-}
-
-button {
+/* シミュレーションボタン */
+#simulateButton {
     display: block;
     width: 100%;
     padding: 15px;
-    background-color: #3498db; /* 青系のボタン色 */
+    background-color: #28a745;
     color: white;
     border: none;
     border-radius: 5px;
-    font-size: 1.1em;
+    font-size: 1.2em;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    margin-top: 20px;
+    box-sizing: border-box;
 }
 
-button:hover {
-    background-color: #2980b9; /* ホバーで少し濃く */
+#simulateButton:hover {
+    background-color: #218838;
 }
 
-.output-section p {
+#simulateButton:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* 結果表示セクション */
+.result-section {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #e9f5e9;
+    border-radius: 8px;
+    border: 1px solid #c3e6cb;
+    text-align: center;
+}
+
+#simulationResult {
     font-size: 1.1em;
-    margin-bottom: 10px;
-    padding: 8px 0;
-}
-
-.output-section span {
     font-weight: bold;
-    color: #e67e22; /* オレンジ系の強調色 */
-    font-size: 1.15em;
+    color: #28a745;
+    margin-bottom: 15px;
 }
 
-/* テーブル */
-table {
-    width: 100%;
-    border-collapse: collapse;
+.disclaimer {
+    font-size: 0.85em;
+    color: #6a737d;
     margin-top: 20px;
-    font-size: 0.95em;
-}
-
-table th, table td {
-    border: 1px solid #ddd;
-    padding: 12px;
     text-align: left;
 }
 
-/* Tierテーブルのヘッダー幅調整 */
-#tierRateTable th:nth-child(1) { width: 25%; } /* Tier名 */
-#tierRateTable th:nth-child(2) { width: 40%; } /* 推定レート帯 */
-#tierRateTable th:nth-child(3) { width: 35%; } /* 順位範囲 */
-
-table th {
-    background-color: #ecf0f1;
-    font-weight: bold;
-    color: #555;
-}
-
-table tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
-}
-
-table tbody tr:hover {
-    background-color: #f0f0f0;
-}
-
-/* スマートフォン向けの調整 (メディアクエリ) */
+/* レスポンシブ対応 */
 @media (max-width: 600px) {
     body {
-        padding: 15px;
+        padding: 10px;
     }
 
     .container {
-        padding: 20px;
+        padding: 15px;
+        border-radius: 0; /* スマホでは角丸をなくす */
+        box-shadow: none; /* スマホでは影をなくす */
     }
 
-    .input-group-inline {
-        flex-direction: column; /* スマホでは縦並び */
-        align-items: flex-start;
+    h1 {
+        font-size: 1.6em;
     }
 
-    .input-group-inline label {
-        margin-bottom: 5px;
-        margin-right: 0;
+    h2 {
+        font-size: 1.2em;
     }
 
-    .input-group-inline input[type="number"] {
-        width: 100%;
-        max-width: none; /* スマホでは最大幅を解除 */
+    .form-group input[type="number"],
+    .form-group select,
+    .opponent-input input[type="text"],
+    .opponent-input input[type="number"] {
+        width: 100%; /* スマホではパディング込みで100% */
     }
 
-    /* テーブルのフォントサイズを小さくする */
-    table {
-        font-size: 0.85em;
-    }
-
-    table th, table td {
-        padding: 8px; /* パディングを小さく */
+    #simulateButton {
+        padding: 12px;
+        font-size: 1.1em;
     }
 }

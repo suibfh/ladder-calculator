@@ -3,171 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ladder Calculator</title>
+    <title>ランクマッチレートシミュレータ</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>Ladder Calculator</h1>
+        <h1>ランクマッチレートシミュレータ</h1>
+        <p class="description">
+            現在のレートや対戦相手との相性を考慮し、今後ランクマッチを続けた場合にレートがどう変動するかをシミュレートします。
+            より多くの対戦相手情報を入力し、総戦闘回数を増やすことで、より精度が高い結果が得られます。
+        </p>
 
         <div class="input-section">
-            <h2>現状の入力</h2>
-            <div class="input-group">
-                <label for="wins">現在の勝ち数:</label>
-                <input type="number" id="wins" value="100" min="0">
+            <h2>対戦相手情報の入力</h2>
+            <div class="form-group">
+                <label for="opponentCount">対戦相手の人数を選択（5〜60人）:</label>
+                <select id="opponentCount">
+                    </select>
             </div>
-            <div class="input-group">
-                <label for="losses">現在の負け数:</label>
-                <input type="number" id="losses" value="70" min="0">
-            </div>
-            <div class="input-group">
-                <label for="currentRate">現在のレート:</label>
-                <input type="number" id="currentRate" value="2059" placeholder="例: 1500" min="0">
-            </div>
-            <div class="input-group">
-                <label for="myRank">自分の順位:</label>
-                <input type="number" id="myRank" value="75" min="1">
-            </div>
-            <div class="input-group">
-                <label for="targetRateIncrease">目標レート増加量:</label>
-                <input type="number" id="targetRateIncrease" value="200" min="0">
-            </div>
-            <div class="input-group">
-                <label for="totalPlayers">ランクマッチの参加人数:</label>
-                <input type="number" id="totalPlayers" value="253" placeholder="例: 253" min="1">
-            </div>
+
+            <div id="opponentsContainer">
+                </div>
         </div>
 
         <div class="input-section">
-            <h2>Tier境界レート設定 (任意)</h2>
-            <div id="tierRateBoundaries">
-                <p>各Tierの一番下の順位の人のレートを入力してください。未入力の場合はデフォルト値を使用します。</p>
-                <div class="input-group tier-rate-input">
-                    <label for="tierRate-フロンティアマスター1位">フロンティア マスター 1位 (最高レート):</label>
-                    <input type="number" id="tierRate-フロンティアマスター1位" value="" min="0">
-                </div>
-                <div class="input-group tier-rate-input">
-                    <label for="tierRate-フロンティアマスター">フロンティア マスター 最低レート:</label>
-                    <input type="number" id="tierRate-フロンティアマスター" value="" min="0">
-                </div>
-                <div class="input-group tier-rate-input">
-                    <label for="tierRate-フロンティアダイヤモンド">フロンティア ダイヤモンド 最低レート:</label>
-                    <input type="number" id="tierRate-フロンティアダイヤモンド" value="" min="0">
-                </div>
-                <div class="input-group tier-rate-input">
-                    <label for="tierRate-フロンティアプラチナ">フロンティア プラチナ 最低レート:</label>
-                    <input type="number" id="tierRate-フロンティアプラチナ" value="" min="0">
-                </div>
-                <div class="input-group tier-rate-input">
-                    <label for="tierRate-ゴールド1">ゴールド 1 最低レート:</label>
-                    <input type="number" id="tierRate-ゴールド1" value="" min="0">
-                </div>
-                <div class="input-group tier-rate-input">
-                    <label for="tierRate-ゴールド2">ゴールド 2 最低レート:</label>
-                    <input type="number" id="tierRate-ゴールド2" value="" min="0">
-                </div>
-                <div class="input-group tier-rate-input">
-                    <label for="tierRate-ゴールド3">ゴールド 3 最低レート:</label>
-                    <input type="number" id="tierRate-ゴールド3" value="" min="0">
-                </div>
-                <div class="input-group tier-rate-input">
-                    <label for="tierRate-シルバー1">シルバー 1 最低レート:</label>
-                    <input type="number" id="tierRate-シルバー1" value="" min="0">
-                </div>
-                <div class="input-group tier-rate-input">
-                    <label for="tierRate-シルバー2">シルバー 2 最低レート:</label>
-                    <input type="number" id="tierRate-シルバー2" value="" min="0">
-                </div>
-                <div class="input-group tier-rate-input">
-                    <label for="tierRate-シルバー3">シルバー 3 最低レート:</label>
-                    <input type="number" id="tierRate-シルバー3" value="" min="0">
-                </div>
-                <div class="input-group tier-rate-input">
-                    <label for="tierRate-ブロンズ1">ブロンズ 1 最低レート:</label>
-                    <input type="number" id="tierRate-ブロンズ1" value="" min="0">
-                </div>
-                <div class="input-group tier-rate-input">
-                    <label for="tierRate-ブロンズ2">ブロンズ 2 最低レート:</label>
-                    <input type="number" id="tierRate-ブロンズ2" value="" min="0">
-                </div>
-                <div class="input-group tier-rate-input">
-                    <label for="tierRate-ブロンズ3">ブロンズ 3 最低レート:</label>
-                    <input type="number" id="tierRate-ブロンズ3" value="" min="0">
-                </div>
+            <h2>シミュレーション設定</h2>
+            <div class="form-group">
+                <label for="totalBattles">総戦闘回数:</label>
+                <input type="number" id="totalBattles" value="1000" min="1" step="100">
             </div>
         </div>
 
-        <div class="input-section">
-            <h2>対戦相手レート別の勝利割合 (%)</h2>
-            <div class="input-group">
-                <label for="winRateVsMuchHigher">かなり高い相手:</label>
-                <input type="number" id="winRateVsMuchHigher" value="30" min="0" max="100">
-            </div>
-            <div class="input-group">
-                <label for="winRateVsSlightlyHigher">やや高い相手:</label>
-                <input type="number" id="winRateVsSlightlyHigher" value="50" min="0" max="100">
-            </div>
-            <div class="input-group">
-                <label for="winRateVsEqual">同等相手:</label>
-                <input type="number" id="winRateVsEqual" value="70" min="0" max="100">
-            </div>
-            <div class="input-group">
-                <label for="winRateVsSlightlyLower">やや低い相手:</label>
-                <input type="number" id="winRateVsSlightlyLower" value="70" min="0" max="100">
-            </div>
-            <div class="input-group">
-                <label for="winRateVsMuchLower">かなり低い相手:</label>
-                <input type="number" id="winRateVsMuchLower" value="80" min="0" max="100">
-            </div>
-        </div>
+        <button id="simulateButton">シミュレーション開始</button>
 
-        <button id="calculateButton">計算する</button>
-
-        <div class="output-section">
-            <p id="validationMessage" class="error-message"></p>
-            <h2>計算結果</h2>
-            <p>現在の総試合数: <span id="totalMatchesDisplay">0</span></p>
-            <p>現在の勝率: <span id="currentWinRate">0.0%</span></p>
-            <p>現在のTier: <span id="currentTierDisplay">-</span></p>
-            <p>今後100試合した場合のレート期待値: <span id="expectedRate100Matches">0</span></p>
-            <p>目標レート達成までの必要勝利数: <span id="neededWinsForTarget">0</span></p>
-
-            <h3>詳細レート変動量 (1勝/1敗あたり)</h3>
-            <table id="rateChangeTable">
-                <thead>
-                    <tr>
-                        <th>相手レートとの差</th>
-                        <th>勝利時増減</th>
-                        <th>敗北時増減</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td>かなり高い</td><td id="gainMuchHigherCalculated"></td><td id="lossMuchHigherCalculated"></td></tr>
-                    <tr><td>やや高い</td><td id="gainSlightlyHigherCalculated"></td><td id="lossSlightlyHigherCalculated"></td></tr>
-                    <tr><td>同等</td><td id="gainEqualCalculated"></td><td id="lossEqualCalculated"></td></tr>
-                    <tr><td>やや低い</td><td id="gainSlightlyLowerCalculated"></td><td id="lossSlightlyLowerCalculated"></td></tr>
-                    <tr><td>かなり低い</td><td id="gainMuchLowerCalculated"></td><td id="lossMuchLowerCalculated"></td></tr>
-                </tbody>
-            </table>
-
-            <h3>Tierと推定レート帯の目安</h3>
-            <div id="tierRateEstimates">
-                <p>ランクマッチ参加人数とTier割合に基づき、Tierごとの順位範囲と推定レート帯を表示します。</p>
-                <table id="tierRateTable">
-                    <thead>
-                        <tr>
-                            <th>順位範囲</th>
-                            <th>Tier名</th>
-                            <th>推定レート帯</th>
-                            <th>人数</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
+        <div class="result-section" id="resultSection">
+            <h2>シミュレーション結果</h2>
+            <div id="simulationResult">
+                <p>「シミュレーション開始」ボタンを押すと結果が表示されます。</p>
             </div>
+            <p class="disclaimer">
+                ※このシミュレータはあくまで目安です。実際のゲームのレート変動ロジックやマッチングシステムとは異なる場合があります。
+                また、入力された情報に基づいて計算されるため、入力値によって結果は大きく変動します。
+            </p>
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
