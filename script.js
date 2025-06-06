@@ -118,11 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 結果表示
         let resultText = '';
-        if (currentRate >= 0) {
-            resultText = `<p><strong>${totalBattles}回</strong>の戦闘を終えた場合、あなたのレートは<span style="color: green;"><strong>${currentRate}</strong></span>変動し、最終レートは<span style="color: green;"><strong>+${currentRate}</strong></span>になるでしょう。</p>`;
-        } else {
-            resultText = `<p><strong>${totalBattles}回</strong>の戦闘を終えた場合、あなたのレートは<span style="color: red;"><strong>${currentRate}</strong></span>変動し、最終レートは<span style="color: red;"><strong>${currentRate}</strong></span>になるでしょう。</p>`;
-        }
+        let trend = currentRate >= 0 ? '上がる' : '下がる';
+        let rateDisplay = currentRate >= 0 ? `+${currentRate}ポイント` : `${currentRate}ポイント`;
+        let textColor = currentRate >= 0 ? 'green' : 'red';
+
+        resultText = `<p><strong>${totalBattles}回</strong>の戦闘をシミュレートした結果、レートは <span style="color: ${textColor};"><strong>${rateDisplay}</strong></span> 増加する期待値です。このまま戦い続ければ、レートは【${trend}】傾向にあります。</p>`;
         
         simulationResultDiv.innerHTML = resultText;
         simulateButton.disabled = false; // ボタンを再度有効化
