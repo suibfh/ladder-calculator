@@ -9,7 +9,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: flex-start; /* 上部に寄せる */
-    min-height: 100vh;
+/*    min-height: 100vh; ワードプレス自動高さ調節のエラーになったのでコメント */
     box-sizing: border-box;
 }
 
