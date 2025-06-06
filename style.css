@@ -10,7 +10,7 @@ body {
     justify-content: center;
     align-items: flex-start; /* 上部に寄せる */
     min-height: 100vh;
-    box-sizing: border-box; /* paddingを含めて要素の幅を計算 */
+    box-sizing: border-box;
 }
 
 .container {
@@ -18,8 +18,8 @@ body {
     padding: 25px;
     border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    max-width: 600px; /* PCでの最大幅 */
-    width: 100%; /* スマホでの幅を100%に */
+    max-width: 600px;
+    width: 100%;
     box-sizing: border-box;
 }
 
@@ -40,14 +40,6 @@ h2 {
     margin-top: 30px;
 }
 
-/* 説明文 */
-.description { /* このクラスはHTMLから削除されたが、CSSに残っていても影響なし */
-    font-size: 0.95em;
-    color: #555;
-    text-align: center;
-    margin-bottom: 25px;
-}
-
 /* 入力セクション */
 .input-section {
     margin-bottom: 25px;
@@ -58,30 +50,31 @@ h2 {
 }
 
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 10px; /* マージンを削減 */
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 5px; /* マージンを削減 */
     font-weight: bold;
     color: #444;
+    font-size: 0.95em; /* 文字サイズを少し小さく */
 }
 
 .form-group input[type="number"],
 .form-group select {
-    width: calc(100% - 20px); /* paddingを考慮 */
-    padding: 10px;
+    width: calc(100% - 20px);
+    padding: 8px; /* パディングを削減 */
     border: 1px solid #ccc;
     border-radius: 5px;
-    font-size: 1em;
-    box-sizing: border-box; /* paddingを含めて幅を計算 */
-    -webkit-appearance: none; /* iOS Safariのデフォルトスタイルを無効化 */
-    -moz-appearance: none;    /* Firefoxのデフォルトスタイルを無効化 */
-    appearance: none;         /* 標準のデフォルトスタイルを無効化 */
+    font-size: 0.95em; /* 文字サイズを少し小さく */
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
     background-color: #fff;
-    background-image: linear-gradient(45deg, transparent 50%, #666 50%), linear-gradient(135deg, #666 50%, transparent 50%), linear-gradient(to right, #ccc, #ccc); /* ドロップダウン矢印 */
-    background-position: calc(100% - 15px) calc(1em + 2px), calc(100% - 10px) calc(1em + 2px), calc(100% - 2.5em) 0.5em;
+    background-image: linear-gradient(45deg, transparent 50%, #666 50%), linear-gradient(135deg, #666 50%, transparent 50%), linear-gradient(to right, #ccc, #ccc);
+    background-position: calc(100% - 15px) calc(0.9em + 2px), calc(100% - 10px) calc(0.9em + 2px), calc(100% - 2.5em) 0.5em;
     background-size: 5px 5px, 5px 5px, 1px 1.5em;
     background-repeat: no-repeat;
 }
@@ -91,20 +84,42 @@ h2 {
 .opponent-input {
     background-color: #f9f9f9;
     border: 1px solid #eee;
-    padding: 15px;
-    margin-bottom: 15px;
+    padding: 12px; /* パディングを削減 */
+    margin-bottom: 12px; /* マージンを削減 */
     border-radius: 6px;
 }
 
-.opponent-input input[type="text"],
-.opponent-input input[type="number"] {
-    width: calc(100% - 20px);
-    padding: 8px;
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+.opponent-input h3 {
+    font-size: 1.1em; /* タイトル文字サイズを調整 */
+    margin-top: 0;
+    margin-bottom: 10px; /* マージンを削減 */
+    color: #34495e;
+}
+
+/* 入力欄の横並び設定 */
+.opponent-input .input-row {
+    display: flex;
+    flex-wrap: wrap; /* スマホで折り返す */
+    gap: 10px; /* アイテム間の隙間 */
+}
+
+.opponent-input .input-item {
+    flex: 1; /* 各アイテムが均等に幅を占める */
+    min-width: 120px; /* 最小幅 */
     box-sizing: border-box;
 }
+
+.opponent-input .input-item label {
+    font-size: 0.85em; /* ラベル文字サイズをさらに小さく */
+    margin-bottom: 3px; /* ラベル下のマージンを削減 */
+}
+
+.opponent-input .input-item input[type="number"] {
+    width: 100%; /* 親要素の幅に合わせて100% */
+    padding: 6px; /* パディングをさらに削減 */
+    font-size: 0.9em; /* 入力文字サイズを小さく */
+}
+
 
 /* シミュレーションボタン */
 #simulateButton {
@@ -143,15 +158,8 @@ h2 {
 #simulationResult {
     font-size: 1.1em;
     font-weight: bold;
-    color: #28a745; /* 結果に応じてJavaScriptで色を調整 */
+    color: #28a745;
     margin-bottom: 15px;
-}
-
-.disclaimer { /* このクラスはHTMLから削除されたが、CSSに残っていても影響なし */
-    font-size: 0.85em;
-    color: #6a737d;
-    margin-top: 20px;
-    text-align: left;
 }
 
 /* レスポンシブ対応 */
@@ -162,8 +170,8 @@ h2 {
 
     .container {
         padding: 15px;
-        border-radius: 0; /* スマホでは角丸をなくす */
-        box-shadow: none; /* スマホでは影をなくす */
+        border-radius: 0;
+        box-shadow: none;
     }
 
     h1 {
@@ -174,11 +182,27 @@ h2 {
         font-size: 1.2em;
     }
 
+    /* スマホでは入力欄を縦並びに戻すか、flex-wrapを活かす */
+    .opponent-input .input-row {
+        flex-direction: column; /* スマホでは縦並びに戻す */
+        gap: 0; /* 隙間をなくす */
+    }
+    .opponent-input .input-item {
+        width: 100%; /* 全幅に */
+        min-width: unset; /* 最小幅を解除 */
+    }
+    .opponent-input .input-item label {
+        font-size: 0.9em; /* ラベル文字サイズをスマホに合わせて調整 */
+    }
+    .opponent-input .input-item input[type="number"] {
+        padding: 8px; /* パディングをスマホに合わせて調整 */
+        font-size: 0.95em; /* 入力文字サイズをスマホに合わせて調整 */
+    }
+
+
     .form-group input[type="number"],
-    .form-group select,
-    .opponent-input input[type="text"],
-    .opponent-input input[type="number"] {
-        width: 100%; /* スマホではパディング込みで100% */
+    .form-group select {
+        width: 100%;
     }
 
     #simulateButton {

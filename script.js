@@ -28,23 +28,22 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < count; i++) {
             const opponentDiv = document.createElement('div');
             opponentDiv.className = 'opponent-input';
+            // 名前入力欄を削除し、レートと勝率を横並びに
             opponentDiv.innerHTML = `
                 <h3>対戦相手 ${i + 1}</h3>
-                <div class="form-group">
-                    <label for="opponentName${i}">名前 (任意):</label>
-                    <input type="text" id="opponentName${i}" value="対戦相手${i + 1}" placeholder="対戦相手${i + 1}">
-                </div>
-                <div class="form-group">
-                    <label for="gainRate${i}">勝った時の獲得レート:</label>
-                    <input type="number" id="gainRate${i}" value="10" min="0" required>
-                </div>
-                <div class="form-group">
-                    <label for="loseRate${i}">負けた時の喪失レート:</label>
-                    <input type="number" id="loseRate${i}" value="10" min="0" required>
-                </div>
-                <div class="form-group">
-                    <label for="winRate${i}">勝率 (%) (0〜100):</label>
-                    <input type="number" id="winRate${i}" value="50" min="0" max="100" required>
+                <div class="input-row">
+                    <div class="input-item">
+                        <label for="gainRate${i}">獲得レート:</label>
+                        <input type="number" id="gainRate${i}" min="0" required>
+                    </div>
+                    <div class="input-item">
+                        <label for="loseRate${i}">喪失レート:</label>
+                        <input type="number" id="loseRate${i}" min="0" required>
+                    </div>
+                    <div class="input-item">
+                        <label for="winRate${i}">勝率 (%):</label>
+                        <input type="number" id="winRate${i}" min="0" max="100" required>
+                    </div>
                 </div>
             `;
             opponentsContainer.appendChild(opponentDiv);
@@ -54,21 +53,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // シミュレーション実行ボタンのイベントリスナー
     simulateButton.addEventListener('click', () => {
         simulateButton.disabled = true; // ボタンを無効化して多重クリック防止
-        simulationResultDiv.innerHTML = '<p>シミュレーション中...</p>';
+        simulationResultDiv.innerHTML = '<p>シミュレーション中...</p>'; // 結果表示エリアをクリア
 
         const opponentCount = parseInt(opponentCountSelect.value, 10);
         const totalBattles = parseInt(totalBattlesInput.value, 10);
 
-        if (totalBattles <= 0 || isNaN(totalBattles)) {
-            simulationResultDiv.innerHTML = '<p style="color: red;">総戦闘回数は1以上の数値を入力してください。</p>';
+        // 総戦闘回数のバリデーション
+        if (isNaN(totalBattles) || totalBattles <= 0) {
+            simulationResultDiv.innerHTML = '<p style="color: red;"><strong>総戦闘回数</strong>を入力してください（1以上の数値）。</p>';
             simulateButton.disabled = false;
             return;
         }
 
         const opponents = [];
-        let isValid = true;
+        let missingInputs = []; // 未入力項目を記録する配列
+
         for (let i = 0; i < opponentCount; i++) {
-            const nameInput = document.getElementById(`opponentName${i}`);
             const gainRateInput = document.getElementById(`gainRate${i}`);
             const loseRateInput = document.getElementById(`loseRate${i}`);
             const winRateInput = document.getElementById(`winRate${i}`);
@@ -77,24 +77,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const loseRate = parseInt(loseRateInput.value, 10);
             const winRate = parseInt(winRateInput.value, 10);
 
-            // 入力値のバリデーション
-            if (isNaN(gainRate) || gainRate < 0 ||
-                isNaN(loseRate) || loseRate < 0 ||
-                isNaN(winRate) || winRate < 0 || winRate > 100) {
-                isValid = false;
-                break;
+            // 未入力チェックと数値バリデーション
+            if (gainRateInput.value === '' || isNaN(gainRate) || gainRate < 0) {
+                missingInputs.push(`対戦相手${i + 1}の「獲得レート」`);
+            }
+            if (loseRateInput.value === '' || isNaN(loseRate) || loseRate < 0) {
+                missingInputs.push(`対戦相手${i + 1}の「喪失レート」`);
+            }
+            if (winRateInput.value === '' || isNaN(winRate) || winRate < 0 || winRate > 100) {
+                missingInputs.push(`対戦相手${i + 1}の「勝率」`);
             }
 
             opponents.push({
-                name: nameInput.value || `対戦相手${i + 1}`,
                 gainRate: gainRate,
                 loseRate: loseRate,
                 winRate: winRate
             });
         }
 
-        if (!isValid) {
-            simulationResultDiv.innerHTML = '<p style="color: red;">対戦相手の入力値に不正があります。数値は0以上、勝率は0〜100で入力してください。</p>';
+        // 未入力項目がある場合のエラー表示
+        if (missingInputs.length > 0) {
+            simulationResultDiv.innerHTML = `<p style="color: red;">以下の項目を入力してください:<br>・${missingInputs.join('<br>・')}</p>`;
             simulateButton.disabled = false;
             return;
         }
@@ -118,11 +121,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 結果表示
         let resultText = '';
-        let trend = currentRate >= 0 ? '上がる' : '下がる';
-        let rateDisplay = currentRate >= 0 ? `+${currentRate}ポイント` : `${currentRate}ポイント`;
-        let textColor = currentRate >= 0 ? 'green' : 'red';
+        let trendText = '';
+        let rateDisplay = '';
+        let textColor = '';
 
-        resultText = `<p><strong>${totalBattles}回</strong>の戦闘をシミュレートした結果、レートは <span style="color: ${textColor};"><strong>${rateDisplay}</strong></span> 増加する期待値です。このまま戦い続ければ、レートは【${trend}】傾向にあります。</p>`;
+        if (currentRate > 0) {
+            trendText = '上がる';
+            rateDisplay = `+${currentRate}ポイント`;
+            textColor = 'green';
+        } else if (currentRate < 0) {
+            trendText = '下がる';
+            rateDisplay = `${currentRate}ポイント`;
+            textColor = 'red';
+        } else { // currentRate === 0
+            trendText = '変わらない';
+            rateDisplay = `±0ポイント`;
+            textColor = '#555'; // グレー系の色
+        }
+
+        resultText = `<p><strong>${totalBattles}回</strong>の戦闘をシミュレートした結果、レートは <span style="color: ${textColor};"><strong>${rateDisplay}</strong></span> 増加する期待値です。このまま戦い続ければ、レートは【${trendText}】傾向にあります。</p>`;
         
         simulationResultDiv.innerHTML = resultText;
         simulateButton.disabled = false; // ボタンを再度有効化
